@@ -5,6 +5,9 @@
             D&D tools
             <ul>
                 <li>
+                    <button id="roll-stat-block">Roll Stat Block</button>
+                </li>
+                <li>
                     <a href="https://tetra-cube.com/dnd/dnd-char-gen.html">
                         Tetra-Cube - D&D 5e Random Character Generator
                     </a>
@@ -48,3 +51,27 @@
         </div>
     </body>
 </html>
+<script>
+    document.getElementById("roll-stat-block").onclick = function () {
+        const stats = [];
+
+        for (let i = 0; i < 6; i++) {
+            let total = 0;
+            let lowest = 6;
+
+            for (let j = 0; j < 4; j++) {
+                const roll = Math.ceil(Math.random() * 6);
+                total += roll;
+
+                if (roll < lowest) {
+                    lowest = roll;
+                }
+            }
+
+            stats.push(total - lowest);
+        }
+
+        navigator.clipboard.writeText(stats.toString());
+        alert(stats.toString());
+    };
+</script>
