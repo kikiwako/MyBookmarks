@@ -54,6 +54,8 @@
 <script>
     document.getElementById("roll-stat-block").onclick = function () {
         const stats = [];
+        let statsTotal = 0;
+        let bonusTotal = 0;
 
         for (let i = 0; i < 6; i++) {
             let total = 0;
@@ -68,10 +70,15 @@
                 }
             }
 
-            stats.push(total - lowest);
+            const result = total - lowest;
+            stats.push(result);
+            statsTotal += result;
+            bonusTotal += Math.floor((result - 10) / 2);
         }
 
-        navigator.clipboard.writeText(stats.toString());
+        const sign = bonusTotal > 0 ? "+" : "";
+        let output = `${stats.toString()}  (${statsTotal}) ${sign}${bonusTotal}`;
+
         alert(stats.toString());
     };
 </script>
