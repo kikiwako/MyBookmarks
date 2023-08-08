@@ -5,7 +5,15 @@
             D&D tools
             <ul>
                 <li>
-                    <button id="roll-stat-block">Roll Stat Block</button>
+                    <button id="roll-stat-block">
+                        Roll Standard Stat Block
+                    </button>
+                    <button id="roll-stat-block-adv">
+                        Roll Advantaged Stat Block
+                    </button>
+                    <button id="roll-stat-block-adv-sort">
+                        Roll Sorted Advantaged Stat Block
+                    </button>
                 </li>
                 <li>
                     <a href="https://tetra-cube.com/dnd/dnd-char-gen.html">
@@ -52,17 +60,19 @@
     </body>
 </html>
 <script>
-    document.getElementById("roll-stat-block").onclick = function () {
+    const rollDice = (faces) => {
+        return Math.ceil(Math.random() * faces);
+    };
+
+    const getStandardRoll = () => {
         const stats = [];
-        let statsTotal = 0;
-        let bonusTotal = 0;
 
         for (let i = 0; i < 6; i++) {
             let total = 0;
             let lowest = 6;
 
             for (let j = 0; j < 4; j++) {
-                const roll = Math.ceil(Math.random() * 6);
+                const roll = rollDice(6);
                 total += roll;
 
                 if (roll < lowest) {
@@ -72,12 +82,114 @@
 
             const result = total - lowest;
             stats.push(result);
-            statsTotal += result;
-            bonusTotal += Math.floor((result - 10) / 2);
         }
 
-        const sign = bonusTotal > 0 ? "+" : "";
-        let output = `${stats.toString()}  (${statsTotal}) ${sign}${bonusTotal}`;
+        return stats;
+    };
+
+    const getTotal = (statblock) => {
+        let total = 0;
+
+        statblock.forEach((stat) => {
+            total += stat;
+        });
+
+        return total;
+    };
+
+    const getBonus = (statblock) => {
+        let total = 0;
+
+        statblock.forEach((stat) => {
+            total += Math.floor((stat - 10) / 2);
+        });
+
+        return total;
+    };
+
+    const getStatsString = (stats, sort = true) => {
+        const arrangedStats = sort ? getSortedStats(stats) : stats;
+        let string = "";
+
+        arrangedStats.forEach((stat) => {
+            if (string.length > 0) {
+                string += ",";
+            }
+
+            if (stat < 10) {
+                string += " ";
+            }
+
+            string += stat;
+        });
+
+        const bonus = getBonus(arrangedStats);
+        const sign = bonus >= 0 ? "+" : "";
+
+        string += ` (${getTotal(arrangedStats)}) ${sign}${bonus}`;
+
+        return string;
+    };
+
+    const getAdvantagedStats = (
+        statsA = getStandardRoll(),
+        statsB = getStandardRoll()
+    ) => {
+        const result = [];
+
+        for (let i = 0; i < 6; i++) {
+            if (statsA[i] > statsB[i]) {
+                result.push(statsA[i]);
+            } else {
+                result.push(statsB[i]);
+            }
+        }
+
+        return result;
+    };
+
+    const getSortedStats = (stats) => {
+        const deepCopy = JSON.parse(JSON.stringify(stats));
+        return deepCopy.sort((a, b) => {
+            return b - a;
+        });
+    };
+
+    const stdArr = [15, 14, 13, 12, 10, 8];
+
+    document.getElementById("roll-stat-block").onclick = function () {
+        const stats = getStandardRoll();
+
+        let output = `Rolled : ${getStatsString(stats)}`;
+        output += `\nStdArr : ${getStatsString(stdArr)}`;
+
+        alert(output);
+    };
+
+    document.getElementById("roll-stat-block-adv").onclick = function () {
+        const rollA = getStandardRoll();
+        const rollB = getStandardRoll();
+        const advantaged = getAdvantagedStats(rollA, rollB);
+
+        let output = `Rolled : ${getStatsString(advantaged)}`;
+        output += `\nStdArr : ${getStatsString(stdArr)}`;
+        output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
+        output += `\nRoll B : ${getStatsString(rollB, false)}`;
+        output += `\nResult : ${getStatsString(advantaged, false)}`;
+
+        alert(output);
+    };
+
+    document.getElementById("roll-stat-block-adv-sort").onclick = function () {
+        const rollA = getSortedStats(getStandardRoll());
+        const rollB = getSortedStats(getStandardRoll());
+        const advantaged = getAdvantagedStats(rollA, rollB);
+
+        let output = `Rolled : ${getStatsString(advantaged)}`;
+        output += `\nStdArr : ${getStatsString(stdArr)}`;
+        output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
+        output += `\nRoll B : ${getStatsString(rollB, false)}`;
+        output += `\nResult : ${getStatsString(advantaged, false)}`;
 
         alert(output);
     };
