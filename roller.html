@@ -105,7 +105,7 @@
                 const [number, faces] = operation.slice(1).split('d');
                 const roll = rollDices(number, faces);
 
-                min += number;
+                min += parseInt(number);
                 max += faces * number;
                 total += parseInt(operator + roll.total);
                 results += operator + roll.result;
