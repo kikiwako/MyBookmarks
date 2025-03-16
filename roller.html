@@ -41,18 +41,80 @@
         let lastRoll;
 
         for (let i = 0; i < number; i++) {
-            console.log({ i })
             lastRoll = rollDice(faces);
 
             total += lastRoll;
             results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
         }
 
-        return {
+        const output = {
             total,
             string: `${number}d${faces}(${results})`
-        }
+        };
+
+        console.log(output);
+
+        return output;
     };
+
+    const NUMBERS = '0123456789'.split('');
+    const OPERATORS = '+-'.split('');
+
+    const splitRollOperations = (str) => {
+        const arrStr = str.split('');
+
+        let operations = [];
+
+        let lastElement = '';
+        let lastElementType = '+';
+
+        arrStr.forEach(char => {
+            const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
+            const isOperator = OPERATORS.includes(char);
+
+            if (isDiceOrDigit) {
+                lastElement += char;
+            } else if (isOperator) {
+                if (lastElement) {
+                    operations.push(lastElementType + lastElement);
+                    lastElement = '';
+                }
+
+                lastElementType = char;
+            } else {
+                throw `Unexpected Character: "${char}"`;
+            }
+        });
+
+        operations.push(lastElementType + lastElement);
+
+        console.log({ operations });
+
+        return operations;
+    }
+
+    const rollString2 = (str) => {
+        const operations = splitRollOperations(str);
+
+        let total = 0;
+        let results = '';
+        operations.forEach(operation => {
+            if (operation.includes('d')) {
+                const operator = operation[0];
+
+                const [number, faces] = operation.slice(1).split('d');
+                const roll = rollDices(number, faces);
+
+                total += parseInt(operator + roll.total);
+                results += operator + roll.results;
+            } else {
+                total += parseInt(operation);
+                results += operation;
+            }
+        });
+
+        return { total, results };
+    }
 
     const rollString = (str) => {
         let additions = [];
@@ -66,11 +128,8 @@
 
         const substract = [];
 
-        console.log({ plusOps });
-
         plusOps.forEach(plusOp => {
             if (plusOp.includes('-')) {
-                console.log({ plusOp, split: plusOp.split('-') });
                 plusOp.split('-').forEach((op, index) => {
                     if (index == 0) {
                         additions.push(op);
