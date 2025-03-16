@@ -27,8 +27,6 @@
             console.log(`${key} : ${results[key].total} [${results[key].results}]`);
         });
 
-
-
         return results;
     }
 
@@ -118,6 +116,8 @@
                 results += operation;
             }
         });
+
+        console.log({ min, max });
 
         if (total == max) {
             results = '[MAX] ' + results;
