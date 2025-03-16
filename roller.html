@@ -23,7 +23,11 @@
 
         Object.keys(action).forEach((key) => {
             results[key] = rollString(action[key]);
+
+            console.log(`${key} : ${results[key].total} [${results[key].results}]`);
         });
+
+
 
         return results;
     }
@@ -83,8 +87,6 @@
         });
 
         operations.push(lastElementType + lastElement);
-
-        console.log({ operations });
 
         return operations;
     }
