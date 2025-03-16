@@ -19,19 +19,17 @@
     };
 
     const rollAction = (action) => {
+        const results = {};
+
         Object.key(action).forEach((key) => {
-            const rollGroup = action[key];
-
-
+            results[key] = rollString(action[key]);
         });
+
+        return results;
     }
 
     const rollDice = (faces) => {
-        const roll = Math.ceil(Math.random() * faces);
-
-        console.log(`d${faces}(${roll})`);
-
-        return roll;
+        return Math.ceil(Math.random() * faces);
     };
 
     const rollDices = (number, faces) => {
@@ -51,8 +49,6 @@
             total,
             result: `${number}d${faces}(${results})`
         };
-
-        console.log(output);
 
         return output;
     };
@@ -93,7 +89,7 @@
         return operations;
     }
 
-    const rollString2 = (str) => {
+    const rollString = (str) => {
         const operations = splitRollOperations(str);
 
         let total = 0;
@@ -110,70 +106,6 @@
             } else {
                 total += parseInt(operation);
                 results += operation;
-            }
-        });
-
-        return { total, results };
-    }
-
-    const rollString = (str) => {
-        let additions = [];
-        let substractions = [];
-
-        const plusOps = [];
-
-        str.split('+').forEach((s) => {
-            plusOps.push(s);
-        });
-
-        const substract = [];
-
-        plusOps.forEach(plusOp => {
-            if (plusOp.includes('-')) {
-                plusOp.split('-').forEach((op, index) => {
-                    if (index == 0) {
-                        additions.push(op);
-                    } else {
-                        substractions.push(op);
-                    }
-                })
-            } else {
-                additions.push(plusOp);
-            }
-        });
-
-        console.log({ additions, substractions });
-
-        let total = 0;
-        let results = ''
-
-        additions.forEach((add) => {
-            console.log({ add });
-            if (add.includes('d')) {
-                const [number, faces] = add.split('d');
-                console.log({ number, faces })
-                const roll = rollDices(number, faces);
-
-                total += parseInt(roll.total);
-                results += `+${roll.string}`;
-            } else {
-                total += parseInt(add);
-                results += `+` + add;
-            }
-        });
-
-        substractions.forEach((subs, index) => {
-            console.log({ subs });
-            if (subs.includes('d')) {
-                const [number, faces] = subs.split('d');
-                console.log({ number, faces })
-                const roll = rollDices(number, faces);
-
-                total -= parseInt(roll.total);
-                results += `-${roll.string}`;
-            } else {
-                total -= parseInt(subs);
-                results += `-` + subs;
             }
         });
 
