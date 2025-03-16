@@ -4,4 +4,120 @@
 <body>test</body>
 
 </html>
-<script></script>
+<script>
+    // Characters > Actions > RollGroups > Rolls
+    const rollObject = {
+        'Tamiti': {
+            'Axe Throw': {
+                'Attack': '1d20+10',
+                "Weapon Damage": '2d6+8',
+                'Sneak Attack': '3d6',
+                'Butterflies': '1d6',
+                "Hunter's Mark": '1d6'
+            },
+        }
+    };
+
+    const rollAction = (action) => {
+        Object.key(action).forEach((key) => {
+            const rollGroup = action[key];
+
+
+        });
+    }
+
+    const rollDice = (faces) => {
+        const roll = Math.ceil(Math.random() * faces);
+
+        console.log(`d${faces}(${roll})`);
+
+        return roll;
+    };
+
+    const rollDices = (number, faces) => {
+        let total = 0;
+        let results = ''
+
+        let lastRoll;
+
+        for (let i = 0; i < number; i++) {
+            console.log({ i })
+            lastRoll = rollDice(faces);
+
+            total += lastRoll;
+            results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
+        }
+
+        return {
+            total,
+            string: `${number}d${faces}(${results})`
+        }
+    };
+
+    const rollString = (str) => {
+        let additions = [];
+        let substractions = [];
+
+        const plusOps = [];
+
+        str.split('+').forEach((s) => {
+            plusOps.push(s);
+        });
+
+        const substract = [];
+
+        console.log({ plusOps });
+
+        plusOps.forEach(plusOp => {
+            if (plusOp.includes('-')) {
+                console.log({ plusOp, split: plusOp.split('-') });
+                plusOp.split('-').forEach((op, index) => {
+                    if (index == 0) {
+                        additions.push(op);
+                    } else {
+                        substractions.push(op);
+                    }
+                })
+            } else {
+                additions.push(plusOp);
+            }
+        });
+
+        console.log({ additions, substractions });
+
+        let total = 0;
+        let results = ''
+
+        additions.forEach((add) => {
+            console.log({ add });
+            if (add.includes('d')) {
+                const [number, faces] = add.split('d');
+                console.log({ number, faces })
+                const roll = rollDices(number, faces);
+
+                total += parseInt(roll.total);
+                results += `+${roll.string}`;
+            } else {
+                total += parseInt(add);
+                results += `+` + add;
+            }
+        });
+
+        substractions.forEach((subs, index) => {
+            console.log({ subs });
+            if (subs.includes('d')) {
+                const [number, faces] = subs.split('d');
+                console.log({ number, faces })
+                const roll = rollDices(number, faces);
+
+                total -= parseInt(roll.total);
+                results += `-${roll.string}`;
+            } else {
+                total -= parseInt(subs);
+                results += `-` + subs;
+            }
+        });
+
+        return { total, results };
+    }
+</script>
