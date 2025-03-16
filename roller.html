@@ -96,6 +96,10 @@
 
         let total = 0;
         let results = '';
+
+        let max = 0;
+        let min = 0;
+
         operations.forEach(operation => {
             if (operation.includes('d')) {
                 const operator = operation[0];
@@ -103,13 +107,23 @@
                 const [number, faces] = operation.slice(1).split('d');
                 const roll = rollDices(number, faces);
 
+                min += number;
+                max += faces * number;
                 total += parseInt(operator + roll.total);
                 results += operator + roll.result;
             } else {
+                min += parseInt(operation);
+                max += parseInt(operation);
                 total += parseInt(operation);
                 results += operation;
             }
         });
+
+        if (total == max) {
+            results = '[MAX] ' + results;
+        } else if (total == min) {
+            results = '<min> ' + results;
+        }
 
         return { total, results };
     }
