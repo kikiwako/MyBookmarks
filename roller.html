@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+<!--suppress EqualityComparisonWithCoercionJS -->
+<html lang="frenglish">
 
 <body>test 1234567</body>
 
@@ -47,18 +48,16 @@
             results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
         }
 
-        const output = {
+        return {
             total,
             result: `${number}d${faces}(${results})`
         };
-
-        return output;
     };
 
     const NUMBERS = '0123456789'.split('');
     const OPERATORS = '+-'.split('');
 
-    const splitRollOperations = (str) => {
+    const splitRollOperations = (str = '') => {
         const arrStr = str.split('');
 
         let operations = [];
