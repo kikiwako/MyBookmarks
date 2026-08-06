@@ -1,6 +1,14 @@
 const data = {
   categories: [
     {
+      name: "My Stuff",
+      buttons: [],
+      links: [
+        { label: "Navidrome - Music", ref: "https://10.243.62.35:4533/"},
+        { label: "My Dice Roller", ref: "https://kikiwako.github.io/MyBookmarks/roller" },
+      ]
+    },
+    {
       name: "D&D Tools",
       buttons: [
         { label: "Roll Standard Stat Block", id: "roll-stat-block" },
