@@ -4,7 +4,8 @@ const data = {
       name: "My Stuff",
       buttons: [],
       links: [
-        { label: "Navidrome - Music", ref: "https://10.243.62.35:4533/"},
+        { label: "Navidrome - local", ref: "https://localhost:4533/"},
+        { label: "Navidrome - VPN", ref: "https://10.243.62.35:4533/"},
         { label: "My Dice Roller", ref: "https://kikiwako.github.io/MyBookmarks/roller" },
       ]
     },
