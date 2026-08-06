@@ -1,252 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MyBookmarks</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 1rem; }
+    .category { margin-bottom: 1.25rem; }
+    .category h2 { margin: 0 0 0.25rem 0; font-size: 1.05rem; }
+    ul { margin: 0.25rem 0 0 1.25rem; }
+    li { margin: 0.25rem 0; }
+    .hidden-note { color: #88888811; display: block; margin-top: 0.5rem; }
+    .button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  </style>
+</head>
 
 <body>
-    <div>
-        D&D tools
-        <ul>
-            <li>
-                <button id="roll-stat-block">
-                    Roll Standard Stat Block
-                </button>
-                <button id="roll-stat-block-adv">
-                    Roll Advantaged Stat Block
-                </button>
-                <button id="roll-stat-block-adv-sort">
-                    Roll Sorted Advantaged Stat Block
-                </button>
-            </li>
-            <li>
-                <a href="https://tetra-cube.com/dnd/dnd-char-gen.html">
-                    Tetra-Cube - D&D 5e Random Character Generator
-                </a>
-            </li>
-            <li>
-                <a href="https://azgaar.github.io/Fantasy-Map-Generator/">
-                    Azgaar - Fantasy-Map-Generator
-                </a>
-            </li>
-            <li>
-                <a href="https://fantasycities.watabou.ru/">
-                    Watabou - Fantasy city generator
-                </a>
-            </li>
-            <li>
-                <a href="https://www.kassoon.com/dnd/town-generator/">
-                    Kassoon - Town Generator
-                </a>
-            </li>
-            <li>
-                <a href="https://www.seventhsanctum.com/index.php">
-                    Seventh Sactum - Generators & Randomizers
-                </a>
-            </li>
-            <li>
-                <a href="https://donjon.bin.sh/">
-                    donjon.bin.sh - Many Generatos for Tabletops
-                </a>
-            </li>
-            <li>
-                <a href="https://www.kassoon.com/dnd/dungeon-map/">
-                    Kassoon - Dungeon Map Generator
-                </a>
-            </li>
-        </ul>
-    </div>
-    <div>
-        Whatever else
-        <ul>
-            <li>
-                <a href="https://thebest404pageeverredux.com">
-                    The Best 404 Page Ever Redux
-                </a>
-            </li>
-            <li>
-                <a href="https://reverb.com">
-                    Reverb.com - Musical instruments Second-hand trading
-                </a>
-            </li>
-            <li>
-                <a href="https://123apps.com/">
-                    123 apps - Various app and tools
-                </a>
-            </li>
-        </ul>
-    </div>
-    <div>
-        Music
-        <ul>
-            <li>
-                <a href="https://nightride.fm/stations?station=spacesynth">
-                    Nightride FM - Synthwave / Spacesynth / etc. radio
-                </a>
-            </li>
-            <li>
-                <a href="https://music.ishkur.com">
-                    Ishkur's Guide to Electronic Music
-                </a>
-            </li>
-            <li>
-                <a href="https://www.zophar.net/">
-                    Zophar's Domain
-                </a>
-            </li>
-        </ul>
-    </div>
-    <div>
-        My Tools & sites
-        <ul>
-            <li>
-                <a href="https://kikiwako.github.io/MyBookmarks/roller">
-                    My Dice Roller
-                </a>
-            </li>
-        </ul>
-    </div>
-    <span style="color: #88888811;">Look at me! I'm hidden! (Ssshhh! It's a secret!)</span>
-    <div>
-        Browsers-Specific
-        <ul>
-            <li><a>vivaldi://restart/</a></li>
-            <li><a>vivaldi://quit/</a></li>
-        </ul>
-    </div>
-    <span style="color: #88888811;">Look at me! I'm hidden! (Ssshhh! It's a secret!)</span>
-</body>
+  <main id="content">
+    <!-- Categories will be generated here from data.js -->
+  </main>
 
-</html>
-<script>
-    const rollDice = (faces) => {
-        return Math.ceil(Math.random() * faces);
-    };
+  <!-- Load the data file which defines a global `data` variable -->
+  <script src="data.js"></script>
+
+  <script>
+    // Render the categories from the global `data` object.
+    (function renderFromData() {
+      if (typeof data === 'undefined') {
+        document.getElementById('content').innerText = 'Error: data.js not loaded.';
+        return;
+      }
+
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+
+      data.categories.forEach((cat) => {
+        const container = document.createElement('section');
+        container.className = 'category';
+
+        const title = document.createElement('h2');
+        title.textContent = cat.name;
+        container.appendChild(title);
+
+        // Buttons (tools)
+        if (Array.isArray(cat.buttons) && cat.buttons.length) {
+          const buttonRow = document.createElement('div');
+          buttonRow.className = 'button-row';
+
+          cat.buttons.forEach((b) => {
+            const btn = document.createElement('button');
+            if (b.id) btn.id = b.id;
+            btn.textContent = b.label;
+            buttonRow.appendChild(btn);
+          });
+
+          container.appendChild(buttonRow);
+        }
+
+        // Links
+        if (Array.isArray(cat.links) && cat.links.length) {
+          const ul = document.createElement('ul');
+
+          cat.links.forEach((l) => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.textContent = l.label;
+            if (l.ref) {
+              a.href = l.ref;
+              // open external links in new tab
+              a.target = '_blank';
+              a.rel = 'noopener noreferrer';
+            }
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
+
+          container.appendChild(ul);
+        }
+
+        content.appendChild(container);
+      });
+
+      // Keep the two hidden notes from the previous version
+      const note1 = document.createElement('span');
+      note1.className = 'hidden-note';
+      note1.textContent = "Look at me! I'm hidden! (Ssshhh! It's a secret!)";
+      content.appendChild(note1);
+
+      const note2 = note1.cloneNode(true);
+      content.appendChild(note2);
+    })();
+
+    // Dice roller functions and wiring. These assume the three buttons exist (if present in data).
+    const rollDice = (faces) => Math.ceil(Math.random() * faces);
 
     const getStandardRoll = () => {
-        const stats = [];
-
-        for (let i = 0; i < 6; i++) {
-            let total = 0;
-            let lowest = 6;
-
-            for (let j = 0; j < 4; j++) {
-                const roll = rollDice(6);
-                total += roll;
-
-                if (roll < lowest) {
-                    lowest = roll;
-                }
-            }
-
-            const result = total - lowest;
-            stats.push(result);
+      const stats = [];
+      for (let i = 0; i < 6; i++) {
+        let total = 0;
+        let lowest = 6;
+        for (let j = 0; j < 4; j++) {
+          const roll = rollDice(6);
+          total += roll;
+          if (roll < lowest) lowest = roll;
         }
-
-        return stats;
+        stats.push(total - lowest);
+      }
+      return stats;
     };
 
-    const getTotal = (statblock) => {
-        let total = 0;
+    const getTotal = (statblock) => statblock.reduce((s, v) => s + v, 0);
 
-        statblock.forEach((stat) => {
-            total += stat;
-        });
+    const getBonus = (statblock) => statblock.reduce((s, stat) => s + Math.floor((stat - 10) / 2), 0);
 
-        return total;
-    };
-
-    const getBonus = (statblock) => {
-        let total = 0;
-
-        statblock.forEach((stat) => {
-            total += Math.floor((stat - 10) / 2);
-        });
-
-        return total;
-    };
+    const getSortedStats = (stats) => JSON.parse(JSON.stringify(stats)).sort((a, b) => b - a);
 
     const getStatsString = (stats, sort = true) => {
-        const arrangedStats = sort ? getSortedStats(stats) : stats;
-        let string = "";
-
-        arrangedStats.forEach((stat) => {
-            if (string.length > 0) {
-                string += ",";
-            }
-
-            if (stat < 10) {
-                string += " ";
-            }
-
-            string += stat;
-        });
-
-        const bonus = getBonus(arrangedStats);
-        const sign = bonus >= 0 ? "+" : "";
-
-        string += ` (${getTotal(arrangedStats)}) ${sign}${bonus}`;
-
-        return string;
+      const arranged = sort ? getSortedStats(stats) : stats;
+      let str = '';
+      arranged.forEach((stat) => {
+        if (str.length > 0) str += ',';
+        str += (stat < 10 ? ' ' : '') + stat;
+      });
+      const bonus = getBonus(arranged);
+      const sign = bonus >= 0 ? '+' : '';
+      str += ` (${getTotal(arranged)}) ${sign}${bonus}`;
+      return str;
     };
 
-    const getAdvantagedStats = (
-        statsA = getStandardRoll(),
-        statsB = getStandardRoll()
-    ) => {
-        const result = [];
-
-        for (let i = 0; i < 6; i++) {
-            if (statsA[i] > statsB[i]) {
-                result.push(statsA[i]);
-            } else {
-                result.push(statsB[i]);
-            }
-        }
-
-        return result;
-    };
-
-    const getSortedStats = (stats) => {
-        const deepCopy = JSON.parse(JSON.stringify(stats));
-        return deepCopy.sort((a, b) => {
-            return b - a;
-        });
+    const getAdvantagedStats = (statsA = getStandardRoll(), statsB = getStandardRoll()) => {
+      const result = [];
+      for (let i = 0; i < 6; i++) result.push(statsA[i] > statsB[i] ? statsA[i] : statsB[i]);
+      return result;
     };
 
     const stdArr = [15, 14, 13, 12, 10, 8];
 
-    document.getElementById("roll-stat-block").onclick = function () {
-        const stats = getStandardRoll();
-
-        let output = `Rolled : ${getStatsString(stats)}`;
-        output += `\nStdArr : ${getStatsString(stdArr)}`;
-
-        alert(output);
+    // Attach event listeners if those buttons exist in the generated DOM
+    const attachIfPresent = (id, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handler);
     };
 
-    document.getElementById("roll-stat-block-adv").onclick = function () {
-        const rollA = getStandardRoll();
-        const rollB = getStandardRoll();
-        const advantaged = getAdvantagedStats(rollA, rollB);
+    attachIfPresent('roll-stat-block', function () {
+      const stats = getStandardRoll();
+      let output = `Rolled : ${getStatsString(stats)}`;
+      output += `\nStdArr : ${getStatsString(stdArr)}`;
+      alert(output);
+    });
 
-        let output = `Rolled : ${getStatsString(advantaged)}`;
-        output += `\nStdArr : ${getStatsString(stdArr)}`;
-        output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
-        output += `\nRoll B : ${getStatsString(rollB, false)}`;
-        output += `\nResult : ${getStatsString(advantaged, false)}`;
+    attachIfPresent('roll-stat-block-adv', function () {
+      const rollA = getStandardRoll();
+      const rollB = getStandardRoll();
+      const advantaged = getAdvantagedStats(rollA, rollB);
+      let output = `Rolled : ${getStatsString(advantaged)}`;
+      output += `\nStdArr : ${getStatsString(stdArr)}`;
+      output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
+      output += `\nRoll B : ${getStatsString(rollB, false)}`;
+      output += `\nResult : ${getStatsString(advantaged, false)}`;
+      alert(output);
+    });
 
-        alert(output);
-    };
+    attachIfPresent('roll-stat-block-adv-sort', function () {
+      const rollA = getSortedStats(getStandardRoll());
+      const rollB = getSortedStats(getStandardRoll());
+      const advantaged = getAdvantagedStats(rollA, rollB);
+      let output = `Rolled : ${getStatsString(advantaged)}`;
+      output += `\nStdArr : ${getStatsString(stdArr)}`;
+      output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
+      output += `\nRoll B : ${getStatsString(rollB, false)}`;
+      output += `\nResult : ${getStatsString(advantaged, false)}`;
+      alert(output);
+    });
+  </script>
+</body>
 
-    document.getElementById("roll-stat-block-adv-sort").onclick = function () {
-        const rollA = getSortedStats(getStandardRoll());
-        const rollB = getSortedStats(getStandardRoll());
-        const advantaged = getAdvantagedStats(rollA, rollB);
-
-        let output = `Rolled : ${getStatsString(advantaged)}`;
-        output += `\nStdArr : ${getStatsString(stdArr)}`;
-        output += `\n\nRoll A : ${getStatsString(rollA, false)}`;
-        output += `\nRoll B : ${getStatsString(rollB, false)}`;
-        output += `\nResult : ${getStatsString(advantaged, false)}`;
-
-        alert(output);
-    };
-</script>
+</html>
