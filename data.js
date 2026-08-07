@@ -49,7 +49,8 @@ const data = {
       links: [
         { label: "Nightride FM - Synthwave / Spacesynth / etc. Radio", ref: "https://nightride.fm/stations?station=spacesynth" },
         { label: "Ishkur's Guide to Electronic Music", ref: "https://music.ishkur.com" },
-        { label: "Zophar's Domain", ref: "https://www.zophar.net/" }
+        { label: "Zophar's Domain", ref: "https://www.zophar.net/" },
+        { label: "Heckscaper", ref: "https://heckscaper.com" }
       ]
     },
     {
