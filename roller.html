@@ -2,128 +2,146 @@
 <!--suppress EqualityComparisonWithCoercionJS -->
 <html lang="frenglish">
 
-<body>test 1234567</body>
+<body>
+<h1>Dice Roller Reference</h1>
+<ul>
+    <li><strong>pad(value, length)</strong> - Center-aligns text
+        <br><em>Example:</em> <code>pad("Tamiti", 20)</code> → "    Tamiti     "
+    </li>
+    <li><strong>rollDice(faces, bonus)</strong> - Single die roll
+        <br><em>Example:</em> <code>rollDice(20, 5)</code> → random(6-25)
+    </li>
+    <li><strong>rollDices(number, faces, flatBonus, perDieBonus)</strong> - Multiple dice
+        <br><em>Example:</em> <code>rollDices(3, 6, 0, 2)</code> → 3d6 where each die gets +2
+        <br><em>Note:</em> flatBonus applies once to total, perDieBonus applies to each die
+    </li>
+    <li><strong>rollString(expression)</strong> - Parse dice notation
+        <br><em>Example:</em> <code>rollString("1d20+10-3")</code> → roll and calculate
+    </li>
+    <li><strong>rollAction(object)</strong> - Roll all actions for a character
+        <br><em>Example:</em> <code>rollAction(rollObject["Tamiti"]["Axe Throw"])</code>
+    </li>
+</ul>
+</body>
 
 </html>
 <script>
-    // Characters > Actions > RollGroups > Rolls
-    const rollObject = {
-        'Tamiti': {
-            'Axe Throw': {
-                'Attack': '1d20+10',
-                "Weapon Damage": '2d6+8',
-                'Sneak Attack': '3d6',
-                'Butterflies': '1d6',
-                "Hunter's Mark": '1d6'
-            },
-        }
-    };
+/**
+ * Centers a string within a target length.
+ * If padding is odd, the extra space goes on the left.
+ * @param {number|string} val - Value to pad
+ * @param {number} lgt - Target total length
+ * @returns {string} Padded centered string
+ */
+const pad = (val, lgt) => {
+    const str = `${val}`;
+    if (lgt <= str.length) return str;
+    
+    const diff = lgt - str.length;
+    // Left gets ceil(diff / 2), right gets floor(diff / 2) for centering
+    return str.padStart(Math.ceil(lgt - (diff / 2)), " ")
+              .padEnd(Math.floor(lgt), " ");
+};
 
-    const rollAction = (action) => {
-        const results = {};
+/**
+ * Rolls multiple dice, returning individual roll totals and formatted string.
+ * @param {number} number - Number of dice to roll (e.g., 3 in 3d6)
+ * @param {number} faces - Sides per die (e.g., 6 in 3d6)
+ * @param {number} flatBonus - Bonus applied once to final total
+ * @param {number} perDieBonus - Bonus added to EACH individual die roll
+ * @returns {{total: number, result: string}} Roll results with formatted string
+ */
+const rollDices = (number, faces, flatBonus = 0, perDieBonus = 0) => {
+    let total = flatBonus;
+    let results = '';
+    let lastRoll;
 
-        Object.keys(action).forEach((key) => {
-            results[key] = rollString(action[key]);
-
-            console.log(`${key} : ${results[key].total} [${results[key].results}]`);
-        });
-
-        return results;
+    for (let i = 0; i < number; i++) {
+        lastRoll = rollDice(faces) + perDieBonus;
+        total += lastRoll;
+        results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
     }
 
-    const rollDice = (faces) => {
-        return Math.ceil(Math.random() * faces);
+    return {
+        total,
+        result: `${number}d${faces}(${results})`
     };
+};
 
-    const rollDices = (number, faces) => {
-        let total = 0;
-        let results = ''
+// Rest of the functions remain unchanged...
+const rollDice = (faces, bonus = 0) => {
+    return Math.ceil(Math.random() * faces) + bonus;
+};
 
-        let lastRoll;
+const splitRollOperations = (str = '') => {
+    const arrStr = str.split('');
+    const NUMBERS = '0123456789';
+    const OPERATORS = '+-';
+    let operations = [];
+    let lastElement = '';
+    let lastElementType = '+';
 
-        for (let i = 0; i < number; i++) {
-            lastRoll = rollDice(faces);
+    arrStr.forEach(char => {
+        const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
+        const isOperator = OPERATORS.includes(char);
 
-            total += lastRoll;
-            results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
-        }
-
-        return {
-            total,
-            result: `${number}d${faces}(${results})`
-        };
-    };
-
-    const NUMBERS = '0123456789'.split('');
-    const OPERATORS = '+-'.split('');
-
-    const splitRollOperations = (str = '') => {
-        const arrStr = str.split('');
-
-        let operations = [];
-
-        let lastElement = '';
-        let lastElementType = '+';
-
-        arrStr.forEach(char => {
-            const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
-            const isOperator = OPERATORS.includes(char);
-
-            if (isDiceOrDigit) {
-                lastElement += char;
-            } else if (isOperator) {
-                if (lastElement) {
-                    operations.push(lastElementType + lastElement);
-                    lastElement = '';
-                }
-
-                lastElementType = char;
-            } else {
-                throw `Unexpected Character: "${char}"`;
+        if (isDiceOrDigit) {
+            lastElement += char;
+        } else if (isOperator) {
+            if (lastElement) {
+                operations.push(lastElementType + lastElement);
+                lastElement = '';
             }
-        });
-
-        operations.push(lastElementType + lastElement);
-
-        return operations;
-    }
-
-    const rollString = (str) => {
-        const operations = splitRollOperations(str);
-
-        let total = 0;
-        let results = '';
-
-        let max = 0;
-        let min = 0;
-
-        operations.forEach(operation => {
-            if (operation.includes('d')) {
-                const operator = operation[0];
-
-                const [number, faces] = operation.slice(1).split('d');
-                const roll = rollDices(number, faces);
-
-                min += parseInt(number);
-                max += faces * number;
-                total += parseInt(operator + roll.total);
-                results += operator + roll.result;
-            } else {
-                min += parseInt(operation);
-                max += parseInt(operation);
-                total += parseInt(operation);
-                results += operation;
-            }
-        });
-
-        console.log({ min, max });
-
-        if (total == max) {
-            results = '[MAX] ' + results;
-        } else if (total == min) {
-            results = '<min> ' + results;
+            lastElementType = char;
+        } else {
+            throw `Unexpected Character: "${char}"`;
         }
+    });
 
-        return { total, results };
+    operations.push(lastElementType + lastElement);
+    return operations;
+};
+
+const rollString = (str) => {
+    const operations = splitRollOperations(str);
+    let total = 0;
+    let results = '';
+    let max = 0;
+    let min = 0;
+
+    operations.forEach(operation => {
+        if (operation.includes('d')) {
+            const operator = operation[0];
+            const [number, faces] = operation.slice(1).split('d');
+            const roll = rollDices(parseInt(number), parseInt(faces));
+
+            min += parseInt(number);
+            max += faces * parseInt(number);
+            total += parseInt(operator + roll.total);
+            results += operator + roll.result;
+        } else {
+            min += parseInt(operation);
+            max += parseInt(operation);
+            total += parseInt(operation);
+            results += operation;
+        }
+    });
+
+    if (total === max) {
+        results = '[MAX] ' + results;
+    } else if (total === min) {
+        results = '<min> ' + results;
     }
+
+    return { total, results };
+};
+
+const rollAction = (action) => {
+    const results = {};
+    Object.keys(action).forEach((key) => {
+        results[key] = rollString(action[key]);
+        console.log(`${key} : ${results[key].total} [${results[key].results}]`);
+    });
+    return results;
+};
 </script>
