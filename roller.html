@@ -37,6 +37,8 @@
         .roll-entry.error { border-left-color: #ff6b6b; }
         .roll-entry.info { border-left-color: #4ecdc4; }
         .roll-entry.success { border-left-color: #51cf66; }
+        .roll-key { opacity: 0.7; }
+        .roll-breakdown { opacity: 0.5; }
         .roll-group {
             border-left-color: #6d4aff;
             background: linear-gradient(to bottom, #e8f4ff, #f4f8ff);
@@ -195,7 +197,9 @@
     
         Object.keys(action).forEach((key) => {
             results[key] = rollString(action[key]);
-            lines.push(`${key}: ${results[key].total} [${results[key].results}]`);
+            const total = results[key].total;
+            const breakdown = results[key].results;
+            lines.push(`<span class="roll-key">${key}:</span> <strong>${total}</strong> <span class="roll-breakdown">[${breakdown}]</span>`);
         });
     
         // Combine all rolls into a SINGLE log entry
