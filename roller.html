@@ -219,30 +219,33 @@
     const buildButtons = (data, parentElement, path = []) => {
         Object.entries(data).forEach(([key, value]) => {
             if (typeof value === 'string' && value.includes('d')) {
-                // It's a roll string - create a roll button
-                const btn = document.createElement('button');
-                btn.textContent = key;
-                btn.style.marginLeft = `${path.length * 10}px`;
-                btn.addEventListener('click', () => {
-                    appendLog(`▶️ ${[...path, key].join(' > ')}:`, 'success');
-                    try {
-                        const result = rollString(value);
-                        appendLog(`   ${value} → ${result.total} [${result.results}]`, 'roll');
-                    } catch (e) {
-                        appendLog(`   ❌ Error: ${e.message}`, 'error');
-                    }
-                });
-                parentElement.appendChild(btn);
+                // Leaf roll string - skip, parent will roll this
+                return;
             } else if (typeof value === 'object' && value !== null) {
-                // It's a category - create a sub-section
-                const subHeading = document.createElement('h4');
-                subHeading.textContent = key;
-                subHeading.style.marginTop = '8px';
-                parentElement.appendChild(subHeading);
+                // Check if this object has roll strings at THIS level
+                const hasRollStrings = Object.values(value).some(v => typeof v === 'string' && v.includes('d'));
                 
-                const subContainer = document.createElement('div');
-                buildButtons(value, subContainer, [...path, key]);
-                parentElement.appendChild(subContainer);
+                if (hasRollStrings) {
+                    // Create button that rolls all sub-rolls together
+                    const btn = document.createElement('button');
+                    btn.textContent = key;
+                    btn.style.marginLeft = `${path.length * 10}px`;
+                    btn.addEventListener('click', () => {
+                        appendLog(`▶️ ${[...path, key].join(' > ')}:`, 'success');
+                        rollAction(value); // Rolls all roll strings in value
+                    });
+                    parentElement.appendChild(btn);
+                } else {
+                    // No roll strings at this level, recurse deeper
+                    const subHeading = document.createElement('h4');
+                    subHeading.textContent = key;
+                    subHeading.style.marginTop = '8px';
+                    parentElement.appendChild(subHeading);
+                    
+                    const subContainer = document.createElement('div');
+                    buildButtons(value, subContainer, [...path, key]);
+                    parentElement.appendChild(subContainer);
+                }
             }
         });
     };
