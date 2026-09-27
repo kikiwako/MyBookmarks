@@ -14,18 +14,19 @@
         
         /* Output styling */
         #output { background: #f4f4f4; padding: 12px; min-height: 100px; max-height: 50vh; overflow-y: auto; }
-        .roll-entry { 
-            padding: 4px 8px; 
-            margin: 2px 0; 
-            border-left: 3px solid #ddd;
-            font-size: 14px;
-            transition: all 0.3s ease;
+        .roll-entry {
+            position: relative;
         }
-        .roll-entry.newest { 
-            background: #e8f4ff; 
-            border-left-color: #6d4aff; 
-            font-size: 16px; 
+        
+        .roll-entry.newest {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #e8f4ff;
+            border-left-color: #6d4aff;
+            font-size: 16px;
             font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .roll-entry .timestamp { 
             color: #888; 
@@ -60,6 +61,11 @@
             color: #6d4aff;
             margin-bottom: 4px;
             font-size: 16px;
+        }
+        .group-content {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
         }
         
         .json-area { margin: 15px 0; }
@@ -300,10 +306,9 @@
         const entryId = ++entryCounter;
         
         const entryDiv = document.createElement('div');
-        entryDiv.className = `roll-entry ${type}`;
+        entryDiv.className = `roll-entry ${type} newest`;  // Add "newest" here
         entryDiv.id = `entry-${entryId}`;
         
-        // Split content by newline and wrap each line
         const lines = content.split('\n');
         let innerHTML = `<span class="timestamp">${timestamp}</span>`;
         innerHTML += `<div class="group-content">${lines.map((line, i) => 
@@ -318,9 +323,9 @@
             el.classList.remove('newest');
         });
         
-        // Insert at top and mark as newest
+        // Insert at top (still needed for ordering)
         outputEl.insertBefore(entryDiv, outputEl.firstChild);
-        entryDiv.classList.add('newest');
+        // No scroll detection needed anymore!
     };
 
     // Load default JSON on page load
