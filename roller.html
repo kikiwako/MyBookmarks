@@ -180,8 +180,13 @@
     const rollStringOutput = document.getElementById('roll-string-output');
 
     const appendOutput = (line) => {
-        outputEl.textContent += '\n' + line;
-    };
+    if (outputEl.textContent.startsWith('Ready.')) {
+        // Clear the initial placeholder on first roll
+        outputEl.textContent = line;
+    } else {
+        outputEl.textContent = line + '\n' + outputEl.textContent;
+    }
+};
 
     // Load default JSON on page load
     const DEFAULT_ROLL_OBJECT = {
