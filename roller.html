@@ -2,7 +2,27 @@
 <!--suppress EqualityComparisonWithCoercionJS -->
 <html lang="frenglish">
 
-<body>test 1234567</body>
+<body>
+<h1>Dice Roller Reference</h1>
+<ul>
+    <li><strong>pad(value, length)</strong> - Center-aligns text
+        <br><em>Example:</em> <code>pad("Tamiti", 20)</code> → "    Tamiti     "
+    </li>
+    <li><strong>rollDice(faces, bonus)</strong> - Single die roll
+        <br><em>Example:</em> <code>rollDice(20, 5)</code> → random(6-25)
+    </li>
+    <li><strong>rollDices(number, faces, flatBonus, perDieBonus)</strong> - Multiple dice
+        <br><em>Example:</em> <code>rollDices(3, 6, 0, 2)</code> → 3d6 where each die gets +2
+        <br><em>Note:</em> flatBonus applies once to total, perDieBonus applies to each die
+    </li>
+    <li><strong>rollString(expression)</strong> - Parse dice notation
+        <br><em>Example:</em> <code>rollString("1d20+10-3")</code> → roll and calculate
+    </li>
+    <li><strong>rollAction(object)</strong> - Roll all actions for a character
+        <br><em>Example:</em> <code>rollAction(rollObject["Tamiti"]["Axe Throw"])</code>
+    </li>
+</ul>
+</body>
 
 </html>
 <script>
@@ -31,18 +51,25 @@
         return results;
     }
 
-    const rollDice = (faces) => {
-        return Math.ceil(Math.random() * faces);
+    const rollDice = (faces, bonus) => {
+        return Math.ceil(Math.random() * faces) + bonus;
     };
 
-    const rollDices = (number, faces) => {
-        let total = 0;
+    /**
+    * Rolls multiple dice, returning individual roll totals and formatted string.
+    * @param {number} number - Number of dice to roll (e.g., 3 in 3d6)
+    * @param {number} faces - Sides per die (e.g., 6 in 3d6)
+    * @param {number} flatBonus - Bonus applied once to final total
+    * @param {number} perDieBonus - Bonus added to EACH individual die roll
+    * @returns {{total: number, result: string}} Roll results with formatted string
+    */
+    const rollDices = (number, faces, flatBonus = 0, perDieBonus = 0) => {
+        let total = flatBonus;
         let results = ''
-
         let lastRoll;
 
         for (let i = 0; i < number; i++) {
-            lastRoll = rollDice(faces);
+            lastRoll = rollDice(faces, perDieBonus);
 
             total += lastRoll;
             results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
@@ -126,4 +153,22 @@
 
         return { total, results };
     }
+
+    /**
+    * Centers a string within a target length.
+    * If padding is odd, the extra space goes on the left.
+    * @param {number|string} val - Value to pad
+    * @param {number} lgt - Target total length
+    * @returns {string} Padded centered string
+    */
+    const pad = (val, lgt) => {
+        const str = `${val}`;
+        if (lgt <= str.length) return str;
+
+        const diff = lgt - str.length;
+        // Left gets ceil(diff / 2), right gets floor(diff / 2) for centering
+        return str.padStart(Math.ceil(lgt - (diff / 2)), " ")
+                .padEnd(Math.floor(lgt), " ");
+    };
+
 </script>
