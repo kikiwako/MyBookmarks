@@ -1,98 +1,92 @@
 <!DOCTYPE html>
-<!--suppress EqualityComparisonWithCoercionJS -->
-<html lang="frenglish">
-
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Dice Roller</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 10px; }
+        textarea, input[type="text"] { width: 100%; box-sizing: border-box; font-family: monospace; }
+        .roll-input-field { display: flex; gap: 10px; margin: 10px 0; align-items: center; }
+        .roll-input-field input { flex: 1; }
+        .actions-area { margin: 15px 0; }
+        button { margin: 4px; padding: 6px 12px; cursor: pointer; }
+        h2 { margin-bottom: 8px; }
+        pre { background: #f4f4f4; padding: 12px; min-height: 100px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+        .json-area { margin: 15px 0; }
+        .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
+    </style>
+</head>
 <body>
 <h1>Dice Roller Reference</h1>
+
+<!-- Roll String Field -->
+<h3>Single Roll</h3>
+<div class="roll-input-field">
+    <input type="text" id="roll-string-input" placeholder='e.g., "1d20+10-3"'>
+    <button id="roll-string-btn">Roll</button>
+</div>
+<div id="roll-string-output" style="margin-top: 5px;"></div>
+
+<hr>
+
+<!-- JSON Action Object Text Area -->
+<h3>Load Character Actions (JSON)</h3>
+<div class="json-area">
+    <label for="json-input">Paste characters JSON (Characters &gt; Actions &gt; roll strings):</label>
+    <textarea id="json-input" rows="12" placeholder='{ "CharacterName": { "ActionName": "1d20+10", ... } }'></textarea>
+    <div style="margin-top: 8px;">
+        <button id="load-json-btn">Load & Create Buttons</button>
+        <button id="clear-json-btn">Clear</button>
+    </div>
+    <div id="parse-error" style="color: red; margin-top: 5px;"></div>
+</div>
+
+<!-- Auto-generated Action Buttons -->
+<div id="actions-container" class="actions-area"></div>
+
+<hr>
+
+<!-- Console / Manual Functions Section -->
+<h3>Console Access</h3>
+<p><em>You can still call functions directly from browser console:</em></p>
 <ul>
-    <li><strong>pad(value, length)</strong> - Center-aligns text
-        <br><em>Example:</em> <code>pad("Tamiti", 20)</code> → "    Tamiti     "
-    </li>
-    <li><strong>rollDice(faces, bonus)</strong> - Single die roll
-        <br><em>Example:</em> <code>rollDice(20, 5)</code> → random(6-25)
-    </li>
-    <li><strong>rollDices(number, faces, flatBonus, perDieBonus)</strong> - Multiple dice
-        <br><em>Example:</em> <code>rollDices(3, 6, 0, 2)</code> → 3d6 where each die gets +2
-        <br><em>Note:</em> flatBonus applies once to total, perDieBonus applies to each die
-    </li>
-    <li><strong>rollString(expression)</strong> - Parse dice notation
-        <br><em>Example:</em> <code>rollString("1d20+10-3")</code> → roll and calculate
-    </li>
-    <li><strong>rollAction(object)</strong> - Roll all actions for a character
-        <br><em>Example:</em> <code>rollAction(rollObject["Tamiti"]["Axe Throw"])</code>
-    </li>
+    <li><code>rollString("2d6+5")</code> - Roll a single expression</li>
+    <li><code>rollDice(20, 5)</code> - Single die roll</li>
+    <li><code>rollDices(3, 6, 0, 2)</code> - Multiple dice with bonuses</li>
+    <li><code>rollAction(rollObject["Tamiti"]["Axe Throw"]) </code> - Roll all actions for a character</li>
 </ul>
-</body>
 
-</html>
+<pre id="output">Ready. Use the roll field, load JSON, or call functions from console.</pre>
+
 <script>
-    // Characters > Actions > RollGroups > Rolls
-    const rollObject = {
-        'Tamiti': {
-            'Axe Throw': {
-                'Attack': '1d20+10',
-                "Weapon Damage": '2d6+8',
-                'Sneak Attack': '3d6',
-                'Butterflies': '1d6',
-                "Hunter's Mark": '1d6'
-            },
-        }
-    };
+    // ========== Core Dice Functions ==========
 
-    const rollAction = (action) => {
-        const results = {};
-
-        Object.keys(action).forEach((key) => {
-            results[key] = rollString(action[key]);
-
-            console.log(`${key} : ${results[key].total} [${results[key].results}]`);
-        });
-
-        return results;
-    }
-
-    const rollDice = (faces, bonus) => {
+    const rollDice = (faces, bonus = 0) => {
         return Math.ceil(Math.random() * faces) + bonus;
     };
 
-    /**
-    * Rolls multiple dice, returning individual roll totals and formatted string.
-    * @param {number} number - Number of dice to roll (e.g., 3 in 3d6)
-    * @param {number} faces - Sides per die (e.g., 6 in 3d6)
-    * @param {number} flatBonus - Bonus applied once to final total
-    * @param {number} perDieBonus - Bonus added to EACH individual die roll
-    * @returns {{total: number, result: string}} Roll results with formatted string
-    */
     const rollDices = (number, faces, flatBonus = 0, perDieBonus = 0) => {
         let total = flatBonus;
-        let results = ''
-        let lastRoll;
+        let results = '';
 
         for (let i = 0; i < number; i++) {
-            lastRoll = rollDice(faces, perDieBonus);
-
+            const lastRoll = rollDice(faces, perDieBonus);
             total += lastRoll;
-            results += i == 0 ? `${lastRoll}` : `+${lastRoll}`;
+            results += (i === 0 ? '' : '+') + lastRoll;
         }
 
-        return {
-            total,
-            result: `${number}d${faces}(${results})`
-        };
+        return { total, result: `${number}d${faces}(${results})` };
     };
 
     const NUMBERS = '0123456789'.split('');
     const OPERATORS = '+-'.split('');
 
     const splitRollOperations = (str = '') => {
-        const arrStr = str.split('');
-
-        let operations = [];
-
+        const operations = [];
         let lastElement = '';
         let lastElementType = '+';
 
-        arrStr.forEach(char => {
+        str.split('').forEach(char => {
             const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
             const isOperator = OPERATORS.includes(char);
 
@@ -103,72 +97,207 @@
                     operations.push(lastElementType + lastElement);
                     lastElement = '';
                 }
-
                 lastElementType = char;
             } else {
                 throw `Unexpected Character: "${char}"`;
             }
         });
 
-        operations.push(lastElementType + lastElement);
+        if (lastElement) {
+            operations.push(lastElementType + lastElement);
+        }
 
         return operations;
-    }
+    };
 
     const rollString = (str) => {
         const operations = splitRollOperations(str);
 
         let total = 0;
         let results = '';
-
         let max = 0;
         let min = 0;
 
         operations.forEach(operation => {
             if (operation.includes('d')) {
                 const operator = operation[0];
+                const parts = operation.slice(1).split('d');
+                const number = parseInt(parts[0], 10);
+                const faces = parseInt(parts[1], 10);
 
-                const [number, faces] = operation.slice(1).split('d');
                 const roll = rollDices(number, faces);
+                const signed = operator === '-' ? -roll.total : roll.total;
 
-                min += parseInt(number);
-                max += faces * number;
-                total += parseInt(operator + roll.total);
+                min += operator === '-' ? -faces * number : number;
+                max += operator === '-' ? -number : faces * number;
+                total += signed;
                 results += operator + roll.result;
             } else {
-                min += parseInt(operation);
-                max += parseInt(operation);
-                total += parseInt(operation);
+                const value = parseInt(operation, 10);
+                min += value;
+                max += value;
+                total += value;
                 results += operation;
             }
         });
 
-        console.log({ min, max });
-
-        if (total == max) {
-            results = '[MAX] ' + results;
-        } else if (total == min) {
-            results = '<min> ' + results;
-        }
+        if (total === max) results = '[MAX] ' + results;
+        else if (total === min) results = '<min> ' + results;
 
         return { total, results };
-    }
+    };
 
-    /**
-    * Centers a string within a target length.
-    * If padding is odd, the extra space goes on the left.
-    * @param {number|string} val - Value to pad
-    * @param {number} lgt - Target total length
-    * @returns {string} Padded centered string
-    */
+    const rollAction = (action) => {
+        const results = {};
+        Object.keys(action).forEach((key) => {
+            results[key] = rollString(action[key]);
+        });
+
+        // Display in the main output
+        Object.entries(results).forEach(([key, result]) => {
+            appendOutput(`${key}: ${result.total} [${result.results}]`);
+        });
+
+        return results;
+    };
+
     const pad = (val, lgt) => {
         const str = `${val}`;
         if (lgt <= str.length) return str;
-
         const diff = lgt - str.length;
-        // Left gets ceil(diff / 2), right gets floor(diff / 2) for centering
         return str.padStart(Math.ceil(lgt - (diff / 2)), " ")
                 .padEnd(Math.floor(lgt), " ");
     };
 
+    // ========== UI Wiring ==========
+
+    const outputEl = document.getElementById('output');
+    const actionsContainer = document.getElementById('actions-container');
+    const jsonInput = document.getElementById('json-input');
+    const parseError = document.getElementById('parse-error');
+    const rollStringInput = document.getElementById('roll-string-input');
+    const rollStringBtn = document.getElementById('roll-string-btn');
+    const rollStringOutput = document.getElementById('roll-string-output');
+
+    const appendOutput = (line) => {
+        outputEl.textContent += '\n' + line;
+    };
+
+    // Load default JSON on page load
+    const DEFAULT_ROLL_OBJECT = {
+        "Tamiti": {
+            "Axe Throw": {
+                "Attack": "1d20+10",
+                "Weapon Damage": "2d6+8",
+                "Sneak Attack": "3d6",
+                "Butterflies": "1d6",
+                "Hunter's Mark": "1d6"
+            }
+        }
+    };
+
+    jsonInput.value = JSON.stringify(DEFAULT_ROLL_OBJECT, null, 4);
+
+    // Single roll string button
+    rollStringBtn.addEventListener('click', () => {
+        const expression = rollStringInput.value.trim();
+        if (!expression) {
+            appendOutput('⚠️ Enter a roll string (e.g., "1d20+10")');
+            return;
+        }
+
+        try {
+            const result = rollString(expression);
+            appendOutput(`🎲 ${expression} → Total: ${result.total} [${result.results}]`);
+        } catch (e) {
+            appendOutput(`❌ Error: ${e.message}`);
+        }
+    });
+
+    // Allow pressing Enter in roll string field
+    rollStringInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            rollStringBtn.click();
+        }
+    });
+
+    // Load JSON and create buttons
+    document.getElementById('load-json-btn').addEventListener('click', () => {
+        parseError.textContent = '';
+        actionsContainer.innerHTML = '';
+        appendOutput('\n--- Loading character actions ---');
+
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonInput.value);
+        } catch (e) {
+            parseError.textContent = '⚠️ JSON Parse Error: ' + e.message;
+            return;
+        }
+
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            parseError.textContent = '⚠️ Root must be an object: {"CharacterName": {...}}';
+            return;
+        }
+
+        Object.entries(parsed).forEach(([character, actions]) => {
+            const heading = document.createElement('h2');
+            heading.textContent = character;
+            actionsContainer.appendChild(heading);
+
+            if (typeof actions !== 'object' || actions === null) {
+                appendOutput(`⚠️ ${character}: Invalid actions object`);
+                return;
+            }
+
+            Object.entries(actions).forEach(([actionName, rolls]) => {
+                const btn = document.createElement('button');
+                btn.textContent = actionName;
+                btn.dataset.character = character;
+                btn.dataset.action = actionName;
+
+                // If rolls is an object with multiple dice expressions, roll all
+                if (typeof rolls === 'object' && !Array.isArray(rolls)) {
+                    btn.addEventListener('click', () => {
+                        appendOutput(`\n▶️ ${character} — ${actionName}:`);
+                        rollAction(rolls);
+                    });
+                } else if (typeof rolls === 'string') {
+                    // Single roll string per action
+                    btn.addEventListener('click', () => {
+                        appendOutput(`\n▶️ ${character} — ${actionName}:`);
+                        try {
+                            const result = rollString(rolls);
+                            appendOutput(`   ${rolls} → ${result.total} [${result.results}]`);
+                        } catch (e) {
+                            appendOutput(`   ❌ Error: ${e.message}`);
+                        }
+                    });
+                } else {
+                    appendOutput(`⚠️ ${character}/${actionName}: Unknown roll format`);
+                }
+
+                actionsContainer.appendChild(btn);
+            });
+        });
+
+        appendOutput('✓ Characters loaded! Click action buttons to roll.');
+    });
+
+    // Clear JSON button
+    document.getElementById('clear-json-btn').addEventListener('click', () => {
+        jsonInput.value = '';
+        parseError.textContent = '';
+        actionsContainer.innerHTML = '';
+        appendOutput('Cleared.');
+    });
+
+    // Expose functions globally for console use
+    window.rollString = rollString;
+    window.rollDice = rollDice;
+    window.rollDices = rollDices;
+    window.rollAction = rollAction;
+    window.pad = pad;
 </script>
+</body>
+</html>
