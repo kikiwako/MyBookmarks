@@ -37,6 +37,21 @@
         .roll-entry.error { border-left-color: #ff6b6b; }
         .roll-entry.info { border-left-color: #4ecdc4; }
         .roll-entry.success { border-left-color: #51cf66; }
+        .roll-group {
+            border-left-color: #6d4aff;
+            background: linear-gradient(to bottom, #e8f4ff, #f4f8ff);
+        }
+        .roll-group .group-title {
+            font-weight: bold;
+            color: #6d4aff;
+            margin-bottom: 4px;
+        }
+        .roll-group .sub-roll {
+            padding-left: 20px;
+            margin: 2px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
         
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -176,15 +191,16 @@
 
     const rollAction = (action) => {
         const results = {};
+        const lines = [];
+    
         Object.keys(action).forEach((key) => {
             results[key] = rollString(action[key]);
+            lines.push(`${key}: ${results[key].total} [${results[key].results}]`);
         });
-
-        // Display in the main output
-        Object.entries(results).forEach(([key, result]) => {
-            appendLog(`${key}: ${result.total} [${result.results}]`, 'roll');
-        });
-
+    
+        // Combine all rolls into a SINGLE log entry
+        appendGroupLog(lines.join('\n'), 'roll-group');
+    
         return results;
     };
 
@@ -218,6 +234,34 @@
         entryDiv.className = `roll-entry ${type}`;
         entryDiv.id = `entry-${entryId}`;
         entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
+        
+        // Remove "newest" class from all existing entries
+        document.querySelectorAll('.roll-entry.newest').forEach(el => {
+            el.classList.remove('newest');
+        });
+        
+        // Insert at top and mark as newest
+        outputEl.insertBefore(entryDiv, outputEl.firstChild);
+        entryDiv.classList.add('newest');
+    };
+
+    const appendGroupLog = (content, type = 'roll-group') => {
+        const timestamp = new Date().toLocaleTimeString();
+        const entryId = ++entryCounter;
+        
+        const entryDiv = document.createElement('div');
+        entryDiv.className = `roll-entry ${type}`;
+        entryDiv.id = `entry-${entryId}`;
+        
+        // Split content by newline and wrap each line
+        const lines = content.split('\n');
+        let innerHTML = `<span class="timestamp">${timestamp}</span>`;
+        innerHTML += `<div class="group-content">${lines.map((line, i) => 
+            i === 0 ? `<strong>${line}</strong>` : 
+            `<div class="sub-roll">${line}</div>`
+        ).join('')}</div>`;
+        
+        entryDiv.innerHTML = innerHTML;
         
         // Remove "newest" class from all existing entries
         document.querySelectorAll('.roll-entry.newest').forEach(el => {
@@ -310,7 +354,6 @@
                 // If rolls is an object with multiple dice expressions, roll all
                 if (typeof rolls === 'object' && !Array.isArray(rolls)) {
                     btn.addEventListener('click', () => {
-                        appendLog(`▶️ ${character} — ${actionName}:`, 'success');
                         rollAction(rolls);
                     });
                 } else if (typeof rolls === 'string') {
