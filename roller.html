@@ -54,6 +54,13 @@
             font-size: 14px;
             opacity: 0.9;
         }
+        .action-title {
+            opacity: 1;
+            font-weight: bold;
+            color: #6d4aff;
+            margin-bottom: 4px;
+            font-size: 16px;
+        }
         
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -191,7 +198,7 @@
         return { total, results };
     };
 
-    const rollAction = (action) => {
+    const rollAction = (action, title = null) => {
         const results = {};
         const lines = [];
     
@@ -201,6 +208,11 @@
             const breakdown = results[key].results;
             lines.push(`<span class="roll-key">${key}:</span> <strong>${total}</strong> <span class="roll-breakdown">[${breakdown}]</span>`);
         });
+    
+        // Prepend action name as first line if provided
+        if (title) {
+            lines.unshift(`<span class="action-title">${title}:</span>`);
+        }
     
         // Combine all rolls into a SINGLE log entry
         appendGroupLog(lines.join('\n'), 'roll-group');
@@ -231,8 +243,8 @@
                     btn.textContent = key;
                     btn.style.marginLeft = `${path.length * 10}px`;
                     btn.addEventListener('click', () => {
-                        appendLog(`▶️ ${[...path, key].join(' > ')}:`, 'success');
-                        rollAction(value); // Rolls all roll strings in value
+                        const actionName = [...path, key].join(' > ');
+                        rollAction(value, actionName); // Pass title instead of separate appendLog
                     });
                     parentElement.appendChild(btn);
                 } else {
