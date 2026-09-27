@@ -11,7 +11,33 @@
         .actions-area { margin: 15px 0; }
         button { margin: 4px; padding: 6px 12px; cursor: pointer; }
         h2 { margin-bottom: 8px; }
-        pre { background: #f4f4f4; padding: 12px; min-height: 100px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+        
+        /* Output styling */
+        #output { background: #f4f4f4; padding: 12px; min-height: 100px; max-height: 50vh; overflow-y: auto; }
+        .roll-entry { 
+            padding: 4px 8px; 
+            margin: 2px 0; 
+            border-left: 3px solid #ddd;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .roll-entry.newest { 
+            background: #e8f4ff; 
+            border-left-color: #6d4aff; 
+            font-size: 16px; 
+            font-weight: 600;
+        }
+        .roll-entry .timestamp { 
+            color: #888; 
+            font-size: 11px; 
+            opacity: 0.7; 
+            margin-right: 10px;
+            user-select: none;
+        }
+        .roll-entry.error { border-left-color: #ff6b6b; }
+        .roll-entry.info { border-left-color: #4ecdc4; }
+        .roll-entry.success { border-left-color: #51cf66; }
+        
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
     </style>
@@ -56,7 +82,8 @@
     <li><code>rollAction(rollObject["Tamiti"]["Axe Throw"]) </code> - Roll all actions for a character</li>
 </ul>
 
-<pre id="output">Ready. Use the roll field, load JSON, or call functions from console.</pre>
+<!-- Changed from pre to div for rich HTML rendering -->
+<div id="output"></div>
 
 <script>
     // ========== Core Dice Functions ==========
@@ -155,7 +182,7 @@
 
         // Display in the main output
         Object.entries(results).forEach(([key, result]) => {
-            appendOutput(`${key}: ${result.total} [${result.results}]`);
+            appendLog(`${key}: ${result.total} [${result.results}]`, 'roll');
         });
 
         return results;
@@ -179,14 +206,28 @@
     const rollStringBtn = document.getElementById('roll-string-btn');
     const rollStringOutput = document.getElementById('roll-string-output');
 
-    const appendOutput = (line) => {
-    if (outputEl.textContent.startsWith('Ready.')) {
-        // Clear the initial placeholder on first roll
-        outputEl.textContent = line;
-    } else {
-        outputEl.textContent = line + '\n' + outputEl.textContent;
-    }
-};
+    // Track entry count for uniqueness
+    let entryCounter = 0;
+
+    // New logging function with timestamp and styling
+    const appendLog = (line, type = 'roll') => {
+        const timestamp = new Date().toLocaleTimeString();
+        const entryId = ++entryCounter;
+        
+        const entryDiv = document.createElement('div');
+        entryDiv.className = `roll-entry ${type}`;
+        entryDiv.id = `entry-${entryId}`;
+        entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
+        
+        // Remove "newest" class from all existing entries
+        document.querySelectorAll('.roll-entry.newest').forEach(el => {
+            el.classList.remove('newest');
+        });
+        
+        // Insert at top and mark as newest
+        outputEl.insertBefore(entryDiv, outputEl.firstChild);
+        entryDiv.classList.add('newest');
+    };
 
     // Load default JSON on page load
     const DEFAULT_ROLL_OBJECT = {
@@ -202,20 +243,21 @@
     };
 
     jsonInput.value = JSON.stringify(DEFAULT_ROLL_OBJECT, null, 4);
+    appendLog('🎲 Ready. Use the roll field, load JSON, or call functions from console.', 'info');
 
     // Single roll string button
     rollStringBtn.addEventListener('click', () => {
         const expression = rollStringInput.value.trim();
         if (!expression) {
-            appendOutput('⚠️ Enter a roll string (e.g., "1d20+10")');
+            appendLog('⚠️ Enter a roll string (e.g., "1d20+10")', 'error');
             return;
         }
 
         try {
             const result = rollString(expression);
-            appendOutput(`🎲 ${expression} → Total: ${result.total} [${result.results}]`);
+            appendLog(`🎲 <strong>${expression}</strong> → Total: ${result.total} [${result.results}]`, 'roll');
         } catch (e) {
-            appendOutput(`❌ Error: ${e.message}`);
+            appendLog(`❌ Error: ${e.message}`, 'error');
         }
     });
 
@@ -230,28 +272,32 @@
     document.getElementById('load-json-btn').addEventListener('click', () => {
         parseError.textContent = '';
         actionsContainer.innerHTML = '';
-        appendOutput('\n--- Loading character actions ---');
 
         let parsed;
         try {
             parsed = JSON.parse(jsonInput.value);
         } catch (e) {
             parseError.textContent = '⚠️ JSON Parse Error: ' + e.message;
+            appendLog('⚠️ Failed to parse JSON: ' + e.message, 'error');
             return;
         }
 
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
             parseError.textContent = '⚠️ Root must be an object: {"CharacterName": {...}}';
+            appendLog('⚠️ JSON root must be an object', 'error');
             return;
         }
 
+        appendLog('✅ Loading character actions...', 'info');
+
+        let loadedCount = 0;
         Object.entries(parsed).forEach(([character, actions]) => {
             const heading = document.createElement('h2');
             heading.textContent = character;
             actionsContainer.appendChild(heading);
 
             if (typeof actions !== 'object' || actions === null) {
-                appendOutput(`⚠️ ${character}: Invalid actions object`);
+                appendLog(`⚠️ ${character}: Invalid actions object`, 'error');
                 return;
             }
 
@@ -264,29 +310,30 @@
                 // If rolls is an object with multiple dice expressions, roll all
                 if (typeof rolls === 'object' && !Array.isArray(rolls)) {
                     btn.addEventListener('click', () => {
-                        appendOutput(`\n▶️ ${character} — ${actionName}:`);
+                        appendLog(`▶️ ${character} — ${actionName}:`, 'success');
                         rollAction(rolls);
                     });
                 } else if (typeof rolls === 'string') {
                     // Single roll string per action
                     btn.addEventListener('click', () => {
-                        appendOutput(`\n▶️ ${character} — ${actionName}:`);
+                        appendLog(`▶️ ${character} — ${actionName}:`, 'success');
                         try {
                             const result = rollString(rolls);
-                            appendOutput(`   ${rolls} → ${result.total} [${result.results}]`);
+                            appendLog(`   ${rolls} → ${result.total} [${result.results}]`, 'roll');
                         } catch (e) {
-                            appendOutput(`   ❌ Error: ${e.message}`);
+                            appendLog(`   ❌ Error: ${e.message}`, 'error');
                         }
                     });
                 } else {
-                    appendOutput(`⚠️ ${character}/${actionName}: Unknown roll format`);
+                    appendLog(`⚠️ ${character}/${actionName}: Unknown roll format`, 'error');
                 }
 
                 actionsContainer.appendChild(btn);
+                loadedCount++;
             });
         });
 
-        appendOutput('✓ Characters loaded! Click action buttons to roll.');
+        appendLog(`✓ Loaded ${loadedCount} action buttons! Click to roll.`, 'info');
     });
 
     // Clear JSON button
@@ -294,7 +341,7 @@
         jsonInput.value = '';
         parseError.textContent = '';
         actionsContainer.innerHTML = '';
-        appendOutput('Cleared.');
+        appendLog('Cleared.', 'info');
     });
 
     // Expose functions globally for console use
