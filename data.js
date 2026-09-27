@@ -16,6 +16,7 @@ const data = {
         { label: "123 Apps - Various Apps and Tools", ref: "https://123apps.com/" },
         { label: "Photopea - Online Photoshop", ref: "https://www.photopea.com/" },
         { label: "YT Convert", ref: "https://bakedbag.fr" },
+        { label: "Diffchecker", ref: "https://www.diffchecker.com/text-compare/" }
       ]
     },
     {
@@ -40,7 +41,16 @@ const data = {
       buttons: [],
       links: [
         { label: "The Best 404 Page Ever Redux", ref: "https://thebest404pageeverredux.com" },
-        { label: "Reverb.com - Musical Instruments Second-hand Trading", ref: "https://reverb.com" }
+        { label: "Reverb.com - Musical Instruments Second-hand Trading", ref: "https://reverb.com" },
+        { label: "The Vimm Vault", ref: "https://vimm.net/" }
+      ]
+    },
+    {
+      name: "Game Tools",
+      buttons: [],
+      links: [
+        { label: "Diablo II - Holy Grail Tracker", ref: "https://d2-holy-grail.herokuapp.com/kikiwako/holy/statistics" },
+        { label: "Remant 2 - Item Tracker", ref: "https://www.remnant2toolkit.com/item-tracker" }
       ]
     },
     {
@@ -50,7 +60,8 @@ const data = {
         { label: "Nightride FM - Synthwave / Spacesynth / etc. Radio", ref: "https://nightride.fm/stations?station=spacesynth" },
         { label: "Ishkur's Guide to Electronic Music", ref: "https://music.ishkur.com" },
         { label: "Zophar's Domain", ref: "https://www.zophar.net/" },
-        { label: "Heckscaper", ref: "https://heckscaper.com" }
+        { label: "Heckscaper", ref: "https://heckscaper.com" },
+        { label: "Space Sounds Records", ref: "http://spacesoundrecords.com/" }
       ]
     },
     {
