@@ -309,8 +309,8 @@
         entryDiv.id = `entry-${entryId}`;
         entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
         
-        outputEl.appendChild(entryDiv);
-        updateFixedDisplay(entryDiv.cloneNode(true));  // Update fixed display
+        outputEl.insertBefore(entryDiv, outputEl.firstChild);  // Changed from appendChild
+        updateFixedDisplay(entryDiv.cloneNode(true));
     };
 
     const appendGroupLog = (content, type = 'roll-group') => {
@@ -330,9 +330,8 @@
         
         entryDiv.innerHTML = innerHTML;
         
-        outputEl.appendChild(entryDiv);  // Changed from insertBefore
+        outputEl.insertBefore(entryDiv, outputEl.firstChild);  // Changed from appendChild
         
-        // Update the fixed display with this new entry
         updateFixedDisplay(entryDiv.cloneNode(true));
     };
 
