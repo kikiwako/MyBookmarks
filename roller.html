@@ -21,16 +21,6 @@
             position: relative;
         }
         
-        .roll-entry.newest {
-            position: sticky;
-            bottom: 0;
-            z-index: 10;
-            background: #e8f4ff;
-            border-left-color: #6d4aff;
-            font-size: 16px;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
         .roll-entry .timestamp { 
             color: #888; 
             font-size: 11px; 
@@ -70,6 +60,8 @@
             padding: 4px 8px;
             border-radius: 4px;
         }
+
+        #fixed-display { display: none; }
         
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -117,7 +109,10 @@
 
 <!-- Changed from pre to div for rich HTML rendering -->
 <div id="output"></div>
-
+<!-- Fixed display showing last roll -->
+<div id="fixed-display" style="position: fixed; bottom: 20px; right: 20px; z-index: 100; max-width: 400px; background: #e8f4ff; border-left: 3px solid #6d4aff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border-radius: 4px;">
+    <div id="fixed-content" style="padding: 12px;"></div>
+</div>
 <script>
     // ========== Core Dice Functions ==========
 
@@ -271,6 +266,26 @@
         });
     };
 
+    const updateFixedDisplay = (entryClone) => {
+        const fixedContent = document.getElementById('fixed-content');
+        
+        // Clean up the clone for fixed display
+        if (entryClone) {
+            // Remove ID to avoid duplicates
+            entryClone.removeAttribute('id');
+            entryClone.id = '';
+            
+            // Optionally reduce opacity for sub-rolls in fixed view
+            const subRolls = entryClone.querySelectorAll('.sub-roll');
+            subRolls.forEach(sr => sr.style.opacity = '0.7');
+            
+            fixedContent.innerHTML = entryClone.innerHTML;
+            fixedContent.parentElement.style.display = 'block';
+        } else {
+            fixedContent.parentElement.style.display = 'none';
+        }
+    };
+
     // ========== UI Wiring ==========
 
     const outputEl = document.getElementById('output');
@@ -289,41 +304,36 @@
         const timestamp = new Date().toLocaleTimeString();
         const entryId = ++entryCounter;
         
-        // Strip "newest" from existing entries FIRST
-        document.querySelectorAll('.roll-entry.newest').forEach(el => {
-            el.classList.remove('newest');
-        });
-        
         const entryDiv = document.createElement('div');
-        entryDiv.className = `roll-entry ${type} newest`;  // Add newest immediately
+        entryDiv.className = `roll-entry ${type}`;
         entryDiv.id = `entry-${entryId}`;
         entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
         
-        outputEl.appendChild(entryDiv);  // Append at END
+        outputEl.appendChild(entryDiv);
+        updateFixedDisplay(entryDiv.cloneNode(true));  // Update fixed display
     };
 
     const appendGroupLog = (content, type = 'roll-group') => {
         const timestamp = new Date().toLocaleTimeString();
         const entryId = ++entryCounter;
-    
-        // Strip "newest" from existing entries FIRST
-        document.querySelectorAll('.roll-entry.newest').forEach(el => {
-            el.classList.remove('newest');
-        });
-    
+        
         const entryDiv = document.createElement('div');
-        entryDiv.className = `roll-entry ${type} newest`;
+        entryDiv.className = `roll-entry ${type}`;
         entryDiv.id = `entry-${entryId}`;
-    
+        
         const lines = content.split('\n');
         let innerHTML = `<span class="timestamp">${timestamp}</span>`;
         innerHTML += `<div class="group-content">${lines.map((line, i) =>
             i === 0 ? `<strong>${line}</strong>` :
             `<div class="sub-roll">${line}</div>`
         ).join('')}</div>`;
-    
+        
         entryDiv.innerHTML = innerHTML;
-        outputEl.appendChild(entryDiv);  // Append at END
+        
+        outputEl.appendChild(entryDiv);  // Changed from insertBefore
+        
+        // Update the fixed display with this new entry
+        updateFixedDisplay(entryDiv.cloneNode(true));
     };
 
     // Load default JSON on page load
