@@ -13,7 +13,10 @@
         h2 { margin-bottom: 8px; }
         
         /* Output styling */
-        #output { background: #f4f4f4; padding: 12px; min-height: 100px; max-height: 50vh; overflow-y: auto; }
+        #output {
+            max-height: 50vh;
+            overflow-y: auto;  /* this creates the scroll container sticky responds to */
+        }
         .roll-entry {
             position: relative;
         }
@@ -304,28 +307,28 @@
     const appendGroupLog = (content, type = 'roll-group') => {
         const timestamp = new Date().toLocaleTimeString();
         const entryId = ++entryCounter;
-        
-        const entryDiv = document.createElement('div');
-        entryDiv.className = `roll-entry ${type} newest`;  // Add "newest" here
-        entryDiv.id = `entry-${entryId}`;
-        
-        const lines = content.split('\n');
-        let innerHTML = `<span class="timestamp">${timestamp}</span>`;
-        innerHTML += `<div class="group-content">${lines.map((line, i) => 
-            i === 0 ? `<strong>${line}</strong>` : 
-            `<div class="sub-roll">${line}</div>`
-        ).join('')}</div>`;
-        
-        entryDiv.innerHTML = innerHTML;
-        
-        // Remove "newest" class from all existing entries
+    
+        // 1. Strip "newest" from the PREVIOUS entry first
         document.querySelectorAll('.roll-entry.newest').forEach(el => {
             el.classList.remove('newest');
         });
-        
-        // Insert at top (still needed for ordering)
+    
+        // 2. Build the new entry WITH the newest class
+        const entryDiv = document.createElement('div');
+        entryDiv.className = `roll-entry ${type} newest`;
+        entryDiv.id = `entry-${entryId}`;
+    
+        const lines = content.split('\n');
+        let innerHTML = `<span class="timestamp">${timestamp}</span>`;
+        innerHTML += `<div class="group-content">${lines.map((line, i) =>
+            i === 0 ? `<strong>${line}</strong>` :
+            `<div class="sub-roll">${line}</div>`
+        ).join('')}</div>`;
+    
+        entryDiv.innerHTML = innerHTML;
+    
+        // 3. Insert at top last
         outputEl.insertBefore(entryDiv, outputEl.firstChild);
-        // No scroll detection needed anymore!
     };
 
     // Load default JSON on page load
