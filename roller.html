@@ -14,10 +14,7 @@
         
         /* Output styling */
         #output {
-            background: #f4f4f4; 
-            padding: 12px; 
-            min-height: 100px;
-            max-height: 50vh; 
+            max-height: 50vh;
             overflow-y: auto;  /* this creates the scroll container sticky responds to */
         }
         .roll-entry {
@@ -26,7 +23,7 @@
         
         .roll-entry.newest {
             position: sticky;
-            top: 0;
+            bottom: 0;
             z-index: 10;
             background: #e8f4ff;
             border-left-color: #6d4aff;
@@ -292,31 +289,28 @@
         const timestamp = new Date().toLocaleTimeString();
         const entryId = ++entryCounter;
         
-        const entryDiv = document.createElement('div');
-        entryDiv.className = `roll-entry ${type}`;
-        entryDiv.id = `entry-${entryId}`;
-        entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
-        
-        // Remove "newest" class from all existing entries
+        // Strip "newest" from existing entries FIRST
         document.querySelectorAll('.roll-entry.newest').forEach(el => {
             el.classList.remove('newest');
         });
         
-        // Insert at top and mark as newest
-        outputEl.insertBefore(entryDiv, outputEl.firstChild);
-        entryDiv.classList.add('newest');
+        const entryDiv = document.createElement('div');
+        entryDiv.className = `roll-entry ${type} newest`;  // Add newest immediately
+        entryDiv.id = `entry-${entryId}`;
+        entryDiv.innerHTML = `<span class="timestamp">${timestamp}</span>${line}`;
+        
+        outputEl.appendChild(entryDiv);  // Append at END
     };
 
     const appendGroupLog = (content, type = 'roll-group') => {
         const timestamp = new Date().toLocaleTimeString();
         const entryId = ++entryCounter;
     
-        // 1. Strip "newest" from the PREVIOUS entry first
+        // Strip "newest" from existing entries FIRST
         document.querySelectorAll('.roll-entry.newest').forEach(el => {
             el.classList.remove('newest');
         });
     
-        // 2. Build the new entry WITH the newest class
         const entryDiv = document.createElement('div');
         entryDiv.className = `roll-entry ${type} newest`;
         entryDiv.id = `entry-${entryId}`;
@@ -329,9 +323,7 @@
         ).join('')}</div>`;
     
         entryDiv.innerHTML = innerHTML;
-    
-        // 3. Insert at top last
-        outputEl.insertBefore(entryDiv, outputEl.firstChild);
+        outputEl.appendChild(entryDiv);  // Append at END
     };
 
     // Load default JSON on page load
