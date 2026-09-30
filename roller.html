@@ -194,6 +194,7 @@
      * Rolls with advantage (higher) or disadvantage (lower).
      */
     const rollDicesAdv = (number, faces, flatBonus = 0, perDieBonus = 0, advantage = true) => {
+        // Roll two independent sets
         const roll1 = rollDices(number, faces, flatBonus, perDieBonus);
         const roll2 = rollDices(number, faces, flatBonus, perDieBonus);
     
@@ -272,6 +273,10 @@
                 const number = parseInt(parts[0], 10);
                 const facesRest = parts[1];
         
+                if (isNaN(number)) {
+                    throw `Invalid number in dice expression: "${operation}"`;
+                }
+        
                 // Extract modifier from brackets: 1d20[adv] or 1d20[dis]
                 let faces = parseInt(facesRest, 10);
                 let advantageMode = null;
@@ -282,6 +287,10 @@
                 } else if (facesRest.includes('[dis]')) {
                     faces = parseInt(facesRest.replace('[dis]', ''), 10);
                     advantageMode = false;
+                }
+        
+                if (isNaN(faces)) {
+                    throw `Invalid faces in dice expression: "${operation}"`;
                 }
         
                 let roll;
