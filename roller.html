@@ -100,6 +100,29 @@
             font-size: 11px;
             margin-left: 4px;
         }
+
+        .die-max {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .die-min {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .roll-max {
+            color: #27ae60;
+        }
+        .roll-min {
+            color: #c0392b;
+        }
+        .adv-chosen {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .dis-chosen {
+            color: #e67e22;
+            font-weight: bold;
+        }
         
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -182,16 +205,35 @@
         return { total, result: `${number}d${faces}(${results})` };
     };
 
+    /**
+     * Rolls with advantage (higher) or disadvantage (lower).
+     */
     const rollDicesAdv = (number, faces, flatBonus = 0, perDieBonus = 0, advantage = true) => {
         const roll1 = rollDices(number, faces, flatBonus, perDieBonus);
         const roll2 = rollDices(number, faces, flatBonus, perDieBonus);
     
-        const useRoll = advantage ? Math.max(roll1.total, roll2.total) : Math.min(roll1.total, roll2.total);
-        const rollText = advantage ? 'max' : 'min';
+        let useRoll, label, highlightClass;
+        if (advantage) {
+            useRoll = Math.max(roll1.total, roll2.total);
+            label = 'adv';
+            highlightClass = 'adv-chosen';
+        } else {
+            useRoll = Math.min(roll1.total, roll2.total);
+            label = 'dis';
+            highlightClass = 'dis-chosen';
+        }
     
-        const results = `${rollText}(${roll1.result},${roll2.result})`;
+        // Mark which roll was chosen
+        const r1Text = roll1.total === useRoll 
+            ? `<span class="${highlightClass}">${roll1.total}</span>` 
+            : roll1.total;
+        const r2Text = roll2.total === useRoll 
+            ? `<span class="${highlightClass}">${roll2.total}</span>` 
+            : roll2.total;
     
-        return { total: useRoll, result: `${results}` };
+        const results = `${label}[${r1Text},${r2Text}]`;
+    
+        return { total: useRoll, result: results };
     };
 
     const NUMBERS = '0123456789'.split('');
