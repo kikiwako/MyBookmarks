@@ -282,13 +282,10 @@
     const updateFixedDisplay = (entryClone) => {
         const fixedContent = document.getElementById('fixed-content');
         
-        // Clean up the clone for fixed display
         if (entryClone) {
-            // Remove ID to avoid duplicates
             entryClone.removeAttribute('id');
             entryClone.id = '';
             
-            // Optionally reduce opacity for sub-rolls in fixed view
             const subRolls = entryClone.querySelectorAll('.sub-roll');
             subRolls.forEach(sr => sr.style.opacity = '0.7');
             
@@ -297,6 +294,62 @@
         } else {
             fixedContent.parentElement.style.display = 'none';
         }
+    };
+    
+    // ===== HISTORY MANAGEMENT (moved up!) =====
+    const HISTORY_KEY = 'diceRollerHistory';
+    const MAX_HISTORY = 5;
+    
+    const executeRoll = (expression, addToHistory = true) => {
+        try {
+            const result = rollString(expression);
+            appendLog(`🎲 <strong>${expression}</strong> → Total: ${result.total} [${result.results}]`, 'roll');
+            
+            if (addToHistory) {
+                saveToHistory(expression);
+            }
+        } catch (e) {
+            appendLog(`❌ Error: ${e.message}`, 'error');
+        }
+    };
+    
+    const saveToHistory = (rollStringText) => {
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        history = history.filter(h => h !== rollStringText);
+        history.unshift(rollStringText);
+        history = history.slice(0, MAX_HISTORY);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        renderHistoryButtons();
+    };
+    
+    const renderHistoryButtons = () => {
+        const historyContainer = document.getElementById('history-buttons');
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        
+        if (history.length === 0) {
+            historyContainer.style.display = 'none';
+            historyContainer.innerHTML = '';
+            return;
+        }
+        
+        historyContainer.style.display = 'flex';
+        historyContainer.style.flexWrap = 'wrap';
+        historyContainer.style.gap = '4px';
+        historyContainer.style.marginTop = '8px';
+        historyContainer.innerHTML = '';
+        
+        history.forEach((text, index) => {
+            const btn = document.createElement('button');
+            btn.textContent = text;
+            btn.className = 'history-button';
+            btn.title = `Recent roll #${index + 1}`;
+            
+            btn.addEventListener('click', () => {
+                executeRoll(text, false);
+            });
+            
+            historyContainer.appendChild(btn);
+        });
     };
 
     // ========== UI Wiring ==========
@@ -445,71 +498,6 @@
             rollStringBtn.click();
         }
     });
-
-    // History management
-    const HISTORY_KEY = 'diceRollerHistory';
-    const MAX_HISTORY = 5;
-    
-    const saveToHistory = (rollStringText) => {
-        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        
-        // Remove if already exists (to avoid duplicates)
-        history = history.filter(h => h !== rollStringText);
-        
-        // Add to beginning
-        history.unshift(rollStringText);
-        
-        // Keep only MAX_HISTORY
-        history = history.slice(0, MAX_HISTORY);
-        
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-        renderHistoryButtons();
-    };
-    
-    const renderHistoryButtons = () => {
-        const historyContainer = document.getElementById('history-buttons');
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        
-        if (history.length === 0) {
-            historyContainer.style.display = 'none';
-            historyContainer.innerHTML = '';
-            return;
-        }
-        
-        historyContainer.style.display = 'flex';
-        historyContainer.style.flexWrap = 'wrap';
-        historyContainer.style.gap = '4px';
-        historyContainer.style.marginTop = '8px';
-        
-        historyContainer.innerHTML = '';
-        
-        history.forEach((text, index) => {
-            const btn = document.createElement('button');
-            btn.textContent = text;
-            btn.className = 'history-button';
-            btn.title = `Recent roll #${index + 1}`;
-            
-            btn.addEventListener('click', () => {
-                // Roll WITHOUT adding to history (to avoid loops)
-                executeRoll(text, false);
-            });
-            
-            historyContainer.appendChild(btn);
-        });
-    };
-    
-    const executeRoll = (expression, addToHistory = true) => {
-        try {
-            const result = rollString(expression);
-            appendLog(`🎲 <strong>${expression}</strong> → Total: ${result.total} [${result.results}]`, 'roll');
-            
-            if (addToHistory) {
-                saveToHistory(expression);
-            }
-        } catch (e) {
-            appendLog(`❌ Error: ${e.message}`, 'error');
-        }
-    };
 
     // Load JSON and create buttons
     document.getElementById('load-json-btn').addEventListener('click', () => {
