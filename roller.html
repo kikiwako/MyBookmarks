@@ -89,6 +89,14 @@
         .roll-min {
             color: #c0392b;
         }
+        .adv-chosen {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .dis-chosen {
+            color: #e67e22;
+            font-weight: bold;
+        }
         
         .adv-text {
             color: #3498db;
@@ -99,29 +107,6 @@
             color: #e67e22;
             font-size: 11px;
             margin-left: 4px;
-        }
-
-        .die-max {
-            color: #2ecc71;
-            font-weight: bold;
-        }
-        .die-min {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .roll-max {
-            color: #27ae60;
-        }
-        .roll-min {
-            color: #c0392b;
-        }
-        .adv-chosen {
-            color: #3498db;
-            font-weight: bold;
-        }
-        .dis-chosen {
-            color: #e67e22;
-            font-weight: bold;
         }
         
         .json-area { margin: 15px 0; }
@@ -246,10 +231,13 @@
     
         str.split('').forEach(char => {
             const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
-            const isAdvantagePart = ['a', 'd', 'v'].includes(char.toLowerCase());
+            const isBracket = ['[', ']'].includes(char);
             const isOperator = OPERATORS.includes(char);
     
             if (isDiceOrDigit) {
+                lastElement += char;
+            } else if (isBracket) {
+                // Brackets are part of dice expressions (e.g., 1d20[adv])
                 lastElement += char;
             } else if (isOperator) {
                 if (lastElement) {
@@ -257,9 +245,6 @@
                     lastElement = '';
                 }
                 lastElementType = char;
-            } else if (isAdvantagePart) {
-                // Allow 'adv' or 'dis' suffix on dice rolls
-                lastElement += char;
             } else {
                 throw `Unexpected Character: "${char}"`;
             }
@@ -287,16 +272,16 @@
                 const number = parseInt(parts[0], 10);
                 const facesRest = parts[1];
         
-                let faces, advantageMode = null;
+                // Extract modifier from brackets: 1d20[adv] or 1d20[dis]
+                let faces = parseInt(facesRest, 10);
+                let advantageMode = null;
         
-                if (facesRest.endsWith('adv')) {
-                    faces = parseInt(facesRest.slice(0, -3), 10);
+                if (facesRest.includes('[adv]')) {
+                    faces = parseInt(facesRest.replace('[adv]', ''), 10);
                     advantageMode = true;
-                } else if (facesRest.endsWith('dis')) {
-                    faces = parseInt(facesRest.slice(0, -3), 10);
+                } else if (facesRest.includes('[dis]')) {
+                    faces = parseInt(facesRest.replace('[dis]', ''), 10);
                     advantageMode = false;
-                } else {
-                    faces = parseInt(facesRest, 10);
                 }
         
                 let roll;
@@ -308,7 +293,6 @@
         
                 const signed = operator === '-' ? -roll.total : roll.total;
         
-                // For advantage/disadvantage, min/max are still based on single roll bounds
                 min += operator === '-' ? -faces * number : number;
                 max += operator === '-' ? -number : faces * number;
                 total += signed;
