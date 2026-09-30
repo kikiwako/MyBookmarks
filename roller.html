@@ -90,6 +90,17 @@
             color: #c0392b;
         }
         
+        .adv-text {
+            color: #3498db;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .dis-text {
+            color: #e67e22;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
     </style>
@@ -171,6 +182,18 @@
         return { total, result: `${number}d${faces}(${results})` };
     };
 
+    const rollDicesAdv = (number, faces, flatBonus = 0, perDieBonus = 0, advantage = true) => {
+        const roll1 = rollDices(number, faces, flatBonus, perDieBonus);
+        const roll2 = rollDices(number, faces, flatBonus, perDieBonus);
+    
+        const useRoll = advantage ? Math.max(roll1.total, roll2.total) : Math.min(roll1.total, roll2.total);
+        const rollText = advantage ? 'max' : 'min';
+    
+        const results = `${rollText}(${roll1.result},${roll2.result})`;
+    
+        return { total: useRoll, result: `${results}` };
+    };
+
     const NUMBERS = '0123456789'.split('');
     const OPERATORS = '+-'.split('');
 
@@ -178,11 +201,12 @@
         const operations = [];
         let lastElement = '';
         let lastElementType = '+';
-
+    
         str.split('').forEach(char => {
             const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
+            const isAdvantagePart = ['a', 'd', 'v'].includes(char.toLowerCase());
             const isOperator = OPERATORS.includes(char);
-
+    
             if (isDiceOrDigit) {
                 lastElement += char;
             } else if (isOperator) {
@@ -191,15 +215,18 @@
                     lastElement = '';
                 }
                 lastElementType = char;
+            } else if (isAdvantagePart) {
+                // Allow 'adv' or 'dis' suffix on dice rolls
+                lastElement += char;
             } else {
                 throw `Unexpected Character: "${char}"`;
             }
         });
-
+    
         if (lastElement) {
             operations.push(lastElementType + lastElement);
         }
-
+    
         return operations;
     };
 
@@ -216,11 +243,30 @@
                 const operator = operation[0];
                 const parts = operation.slice(1).split('d');
                 const number = parseInt(parts[0], 10);
-                const faces = parseInt(parts[1], 10);
-
-                const roll = rollDices(number, faces);
+                const facesRest = parts[1];
+        
+                let faces, advantageMode = null;
+        
+                if (facesRest.endsWith('adv')) {
+                    faces = parseInt(facesRest.slice(0, -3), 10);
+                    advantageMode = true;
+                } else if (facesRest.endsWith('dis')) {
+                    faces = parseInt(facesRest.slice(0, -3), 10);
+                    advantageMode = false;
+                } else {
+                    faces = parseInt(facesRest, 10);
+                }
+        
+                let roll;
+                if (advantageMode !== null) {
+                    roll = rollDicesAdv(number, faces, 0, 0, advantageMode);
+                } else {
+                    roll = rollDices(number, faces, 0, 0);
+                }
+        
                 const signed = operator === '-' ? -roll.total : roll.total;
-
+        
+                // For advantage/disadvantage, min/max are still based on single roll bounds
                 min += operator === '-' ? -faces * number : number;
                 max += operator === '-' ? -number : faces * number;
                 total += signed;
