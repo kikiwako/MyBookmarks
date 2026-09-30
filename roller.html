@@ -74,6 +74,21 @@
         .history-button:hover {
             background: #e0e0e0;
         }
+
+        .die-max {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .die-min {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .roll-max {
+            color: #27ae60;
+        }
+        .roll-min {
+            color: #c0392b;
+        }
         
         .json-area { margin: 15px 0; }
         .json-area label { font-weight: bold; display: block; margin-bottom: 5px; }
@@ -136,13 +151,23 @@
     const rollDices = (number, faces, flatBonus = 0, perDieBonus = 0) => {
         let total = flatBonus;
         let results = '';
-
+    
         for (let i = 0; i < number; i++) {
             const lastRoll = rollDice(faces, perDieBonus);
+            const baseValue = lastRoll - perDieBonus;  // Value before per-die bonus
             total += lastRoll;
-            results += (i === 0 ? '' : '+') + lastRoll;
+            
+            // Mark max/min individual dice
+            let rollText = `${lastRoll}`;
+            if (baseValue === faces) {
+                rollText = `<span class="die-max">${lastRoll}</span>`;
+            } else if (baseValue === 1) {
+                rollText = `<span class="die-min">${lastRoll}</span>`;
+            }
+            
+            results += (i === 0 ? '' : '+') + rollText;
         }
-
+    
         return { total, result: `${number}d${faces}(${results})` };
     };
 
@@ -209,8 +234,11 @@
             }
         });
 
-        if (total === max) results = '[MAX] ' + results;
-        else if (total === min) results = '<min> ' + results;
+        if (total === max) {
+            results = `[MAX] <span class="roll-max">${results}</span>`;
+        } else if (total === min) {
+            results = `<min> <span class="roll-min">${results}</span>`;
+        }
 
         return { total, results };
     };
@@ -226,12 +254,10 @@
             lines.push(`<span class="roll-key">${key}:</span> <strong>${total}</strong> <span class="roll-breakdown">[${breakdown}]</span>`);
         });
     
-        // Prepend action name as first line if provided
         if (title) {
             lines.unshift(`<span class="action-title">${title}:</span>`);
         }
     
-        // Combine all rolls into a SINGLE log entry
         appendGroupLog(lines.join('\n'), 'roll-group');
     
         return results;
