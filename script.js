@@ -137,8 +137,13 @@ const rollString = (str) => {
 
             const signed = operator === '-' ? -roll.total : roll.total;
 
-            min += operator === '-' ? -faces * number : number;
-            max += operator === '-' ? -number : faces * number;
+            if (operator === '-') {
+                min += -faces * number;
+                max += -number;
+            } else {
+                min += number;
+                max += faces * number;
+            }
             total += signed;
             results += operator + roll.result;
         } else {
