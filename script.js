@@ -84,7 +84,7 @@ const splitRollOperations = (str = '') => {
             }
             lastElementType = char;
         } else {
-            throw `Unexpected Character: "${char}"`;
+            throw new Error(`Unexpected Character: "${char}"`);
         }
     });
 
@@ -111,7 +111,7 @@ const rollString = (str) => {
             const facesRest = parts[1];
     
             if (isNaN(number)) {
-                throw `Invalid number in dice expression: "${operation}"`;
+                throw new Error(`Invalid number in dice expression: "${operation}"`);
             }
     
             // Extract modifier from brackets: 1d20[adv] or 1d20[dis]
@@ -127,7 +127,7 @@ const rollString = (str) => {
             }
     
             if (isNaN(faces)) {
-                throw `Invalid faces in dice expression: "${operation}"`;
+                throw new Error(`Invalid faces in dice expression: "${operation}"`);
             }
     
             let roll;
@@ -253,7 +253,8 @@ const executeRoll = (expression, addToHistory = true) => {
             saveToHistory(expression);
         }
     } catch (e) {
-        appendLog(`❌ Error: ${e.message}`, 'error');
+        const errorMsg = e.message || String(e);
+        appendLog(`❌ Error: ${errorMsg}`, 'error');
     }
 };
 
