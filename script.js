@@ -96,6 +96,7 @@ const splitRollOperations = (str = '') => {
 };
 
 const rollString = (str) => {
+    const normalized = str.replace(/\[adv\]/g, '[adv]').replace(/\[dis\]/g, '[dis]');
     const operations = splitRollOperations(str);
 
     let total = 0;
@@ -108,8 +109,18 @@ const rollString = (str) => {
             const operator = operation[0];
             const parts = operation.slice(1).split('d');
             const number = parseInt(parts[0], 10);
-            const facesRest = parts[1];
-    
+            
+            let facesRest = parts[1];
+            if (facesRest.includes('[adv]')) {
+              faces = parseInt(facesRest.replace(/\[adv\]/g, ''), 10);
+              advantageMode = true;
+            } else if (facesRest.includes('[dis]')) {
+              faces = parseInt(facesRest.replace(/\[dis\]/g, ''), 10);
+              advantageMode = false;
+            } else {
+              faces = parseInt(facesRest, 10);
+            }    
+            
             if (isNaN(number)) {
                 throw new Error(`Invalid number in dice expression: "${operation}"`);
             }
@@ -253,8 +264,8 @@ const executeRoll = (expression, addToHistory = true) => {
             saveToHistory(expression);
         }
     } catch (e) {
-        const errorMsg = e.message || String(e);
-        appendLog(`❌ Error: ${errorMsg}`, 'error');
+      const message = e && e.message ? e.message : String(e);
+      appendLog(`❌ Error: ${message}`, 'error');
     }
 };
 
