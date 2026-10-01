@@ -96,7 +96,6 @@ const splitRollOperations = (str = '') => {
 };
 
 const rollString = (str) => {
-    const normalized = str.replace(/\[adv\]/g, '[adv]').replace(/\[dis\]/g, '[dis]');
     const operations = splitRollOperations(str);
 
     let total = 0;
@@ -109,47 +108,35 @@ const rollString = (str) => {
             const operator = operation[0];
             const parts = operation.slice(1).split('d');
             const number = parseInt(parts[0], 10);
-            
-            let facesRest = parts[1];
-            if (facesRest.includes('[adv]')) {
-              faces = parseInt(facesRest.replace(/\[adv\]/g, ''), 10);
-              advantageMode = true;
-            } else if (facesRest.includes('[dis]')) {
-              faces = parseInt(facesRest.replace(/\[dis\]/g, ''), 10);
-              advantageMode = false;
-            } else {
-              faces = parseInt(facesRest, 10);
-            }    
-            
+            const facesRaw = parts[1];
+
             if (isNaN(number)) {
                 throw new Error(`Invalid number in dice expression: "${operation}"`);
             }
-    
-            // Extract modifier from brackets: 1d20[adv] or 1d20[dis]
-            let faces = parseInt(facesRest, 10);
+
+            let faces = 0;
             let advantageMode = null;
-    
-            if (facesRest.includes('[adv]')) {
-                faces = parseInt(facesRest.replace('[adv]', ''), 10);
+
+            if (facesRaw.includes('[adv]')) {
+                faces = parseInt(facesRaw.replace(/\[adv\]/g, ''), 10);
                 advantageMode = true;
-            } else if (facesRest.includes('[dis]')) {
-                faces = parseInt(facesRest.replace('[dis]', ''), 10);
+            } else if (facesRaw.includes('[dis]')) {
+                faces = parseInt(facesRaw.replace(/\[dis\]/g, ''), 10);
                 advantageMode = false;
+            } else {
+                faces = parseInt(facesRaw, 10);
             }
-    
+
             if (isNaN(faces)) {
                 throw new Error(`Invalid faces in dice expression: "${operation}"`);
             }
-    
-            let roll;
-            if (advantageMode !== null) {
-                roll = rollDicesAdv(number, faces, 0, 0, advantageMode);
-            } else {
-                roll = rollDices(number, faces, 0, 0);
-            }
-    
+
+            const roll = advantageMode !== null
+                ? rollDicesAdv(number, faces, 0, 0, advantageMode)
+                : rollDices(number, faces, 0, 0);
+
             const signed = operator === '-' ? -roll.total : roll.total;
-    
+
             min += operator === '-' ? -faces * number : number;
             max += operator === '-' ? -number : faces * number;
             total += signed;
@@ -264,8 +251,8 @@ const executeRoll = (expression, addToHistory = true) => {
             saveToHistory(expression);
         }
     } catch (e) {
-      const message = e && e.message ? e.message : String(e);
-      appendLog(`❌ Error: ${message}`, 'error');
+        const message = e && e.message ? e.message : String(e);
+        appendLog(`❌ Error: ${message}`, 'error');
     }
 };
 
