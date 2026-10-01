@@ -46,15 +46,15 @@ const rollDicesAdv = (number, faces, flatBonus = 0, perDieBonus = 0, advantage =
         highlightClass = 'dis-chosen';
     }
 
-    // Mark which roll was chosen
+    // Mark which roll was chosen with visual indicators
     const r1Text = roll1.total === useRoll 
-        ? `<span class="${highlightClass}">${roll1.total}</span>` 
-        : roll1.total;
+        ? `<span class="${highlightClass}">${roll1.total} ✓</span>` 
+        : `<span class="roll-discarded">${roll1.total}</span>`;
     const r2Text = roll2.total === useRoll 
-        ? `<span class="${highlightClass}">${roll2.total}</span>` 
-        : roll2.total;
+        ? `<span class="${highlightClass}">${roll2.total} ✓</span>` 
+        : `<span class="roll-discarded">${roll2.total}</span>`;
 
-    const results = `${label}[${r1Text},${r2Text}]`;
+    const results = `${label}(${r1Text} vs ${r2Text})`;
 
     return { total: useRoll, result: results };
 };

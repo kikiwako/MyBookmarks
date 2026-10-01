@@ -141,6 +141,12 @@ h2 {
     color: #c0392b;
 }
 
+.roll-discarded {
+    color: #95a5a6;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
 .adv-chosen {
     color: #3498db;
     font-weight: bold;
