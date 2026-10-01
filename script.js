@@ -70,12 +70,10 @@ const splitRollOperations = (str = '') => {
     str.split('').forEach(char => {
         const isDiceOrDigit = ['d', ...NUMBERS].includes(char);
         const isBracket = ['[', ']'].includes(char);
+        const isLetter = /[a-z]/i.test(char);
         const isOperator = OPERATORS.includes(char);
 
-        if (isDiceOrDigit) {
-            lastElement += char;
-        } else if (isBracket) {
-            // Brackets are part of dice expressions (e.g., 1d20[adv])
+        if (isDiceOrDigit || isBracket || isLetter) {
             lastElement += char;
         } else if (isOperator) {
             if (lastElement) {
