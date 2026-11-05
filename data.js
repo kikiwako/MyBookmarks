@@ -7,8 +7,8 @@ const data = {
         { label: "Navidrome - local", ref: "https://localhost:4533/"},
         { label: "Navidrome - VPN", ref: "https://10.243.62.35:4533/"},
         { label: "My Dice Roller", ref: "https://kikiwako.github.io/MyBookmarks/roller" },
-        { label: "Testing Grounds". ref: "https://kikiwako.github.io/MyBookmarks/testing"},
-        { label: "Voyage Save Editor". ref: "https://kikiwako.github.io/MyBookmarks/VoyageSaveEditorTool" }
+        { label: "Testing Grounds", ref: "https://kikiwako.github.io/MyBookmarks/testing"},
+        { label: "Voyage Save Editor", ref: "https://kikiwako.github.io/MyBookmarks/VoyageSaveEditorTool" }
       ]
     },
     {
