@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voyage Save Editor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eaeaea;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: #6d4aff; margin-top: 0; }
+        
+        /* File Upload */
+        .dropzone {
+            border: 3px dashed #6d4aff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #16213e;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: #8c7bff;
+            background: #1a2850;
+        }
+        .dropzone input[type="file"] { display: none; }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        select, button {
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        button {
+            background: #6d4aff;
+            color: white;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.85; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.danger { background: #e74c3c; }
+        button.secondary { background: #3a3a5a; }
+        
+        select {
+            background: #2a2a4a;
+            color: #eaeaea;
+            border: 2px solid #4a4a6a;
+        }
+        
+        /* Turn List */
+        .turn-list {
+            background: #16213e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .turn-item {
+            border-bottom: 1px solid #2a2a4a;
+            padding: 12px 16px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .turn-item:last-child { border-bottom: none; }
+        .turn-item:hover { background: #1a2850; }
+        .turn-item.current { background: #1a3a5a; border-left: 4px solid #6d4aff; }
+        .turn-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .turn-meta {
+            font-size: 12px;
+            color: #8a8aaa;
+        }
+        .turn-number {
+            font-weight: bold;
+            color: #6d4aff;
+            margin-right: 12px;
+        }
+        .tick-badge {
+            background: #2a2a4a;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        .turn-preview {
+            background: #0f1623;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            height: auto;
+            min-height: 2.8em;
+            resize: vertical;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        /* Edit Mode */
+        .turn-item.editing {
+            background: #1a2850;
+        }
+        .edit-form {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .edit-form label {
+            font-size: 12px;
+            color: #8a8aaa;
+        }
+        .edit-form textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 2px solid #4a4a6a;
+            background: #0f1623;
+            color: #eaeaea;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 80px;
+            overflow-y: auto;
+        }
+        .edit-form textarea:focus {
+            outline: none;
+            border-color: #6d4aff;
+        }
+        .edit-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        /* Linked Data Panel */
+        .linked-data {
+            background: #2a1a1a;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .linked-data h4 {
+            color: #e74c3c;
+            margin: 0 0 8px 0;
+            font-size: 13px;
+        }
+        .linked-entry {
+            font-family: monospace;
+            font-size: 11px;
+            padding: 6px 8px;
+            border-bottom: 1px solid #3a2a2a;
+            display: grid;
+            grid-template-columns: minmax(150px, 2fr) minmax(60px, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .linked-entry.transient {
+            opacity: 0.55;
+        }
+        .linked-entry code {
+            color: #a0a0ff;
+            word-break: break-all;
+        }
+        .linked-entry .value-display {
+            background: #3a2a2a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #e74c3c;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .linked-entry select.action-select {
+            background: #2a2a4a;
+            color: #eaeaea;
+            border: 1px solid #4a4a6a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            max-width: 190px;
+        }
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .group-note {
+            font-size: 10px;
+            color: #e67e22;
+            margin-left: 8px;
+        }
+        .bulk-apply {
+            font-size: 10px;
+            padding: 2px 8px;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #6d4aff;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6d4aff;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #8a8aaa;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #1a1a2e;
+            padding: 24px;
+            border-radius: 8px;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #6d4aff;
+        }
+        .modal h2 { margin-top: 0; }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* Scrollable area */
+        .scrollable {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .warning-text {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .linked-info-summary {
+            background: #2a2a4a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        
+        .legend {
+            background: #1a2850;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 16px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-bottom: 4px;
+        }
+        .legend-reset { background: #2a1a1a; color: #e74c3c; }
+        .legend-backfill { background: #1a3a5a; color: #4fc3f7; }
+        .legend-keep { background: #1a2a1a; color: #4caf50; }
+        .legend-delete { background: #3a1a2a; color: #e91e63; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Voyage Save Editor</h1>
+        
+        <!-- Dropzone -->
+        <div id="dropzone" class="dropzone">
+            <p><strong>Drag & drop your game-state.json here</strong></p>
+            <p>or click to browse</p>
+            <input type="file" id="fileInput" accept=".json">
+        </div>
+        
+        <!-- Main Interface (hidden until loaded) -->
+        <div id="interface" class="hidden">
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="value" id="totalTurns">-</div>
+                    <div class="label">Total Turns</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="currentTick">-</div>
+                    <div class="label">Current Tick</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="linkedFields">-</div>
+                    <div class="label">Potential Tick-Linked Fields</div>
+                </div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls">
+                <select id="partySelect"></select>
+                <button id="exportBtn" class="secondary">⬇ Export Modified JSON</button>
+                <button id="resetBtn" class="danger">↺ Reset All Changes</button>
+            </div>
+            
+            <!-- Turn List -->
+            <div class="turn-list scrollable" id="turnList"></div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h2 id="modalTitle">Confirm Action</h2>
+            <div id="modalContent"></div>
+            <div class="modal-buttons">
+                <button class="secondary" id="modalCancel">Cancel</button>
+                <button id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // =====================================================
+    // Global State
+    // =====================================================
+    let gameState = null;
+    let originalJson = null;
+    let selectedPartyId = null;
+    let editedTurns = new Map();
+    let deletedTurnIndices = new Set();
+    
+    // =====================================================
+    // File Loading
+    // =====================================================
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const interfaceEl = document.getElementById('interface');
+    
+    dropzone.addEventListener('click', () => fileInput.click());
+    
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+    
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+    });
+    
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.json')) {
+            loadJsonFile(file);
+        } else {
+            alert('Please drop a .json file');
+        }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) loadJsonFile(file);
+    });
+    
+    async function loadJsonFile(file) {
+        try {
+            const text = await file.text();
+            gameState = JSON.parse(text);
+            originalJson = text;
+            
+            document.getElementById('totalTurns').textContent = '-';
+            document.getElementById('currentTick').textContent = '-';
+            document.getElementById('linkedFields').textContent = '-';
+            
+            populateParties();
+            dropzone.classList.add('hidden');
+            interfaceEl.classList.remove('hidden');
+            
+            console.log('✓ Game state loaded');
+        } catch (err) {
+            alert('Failed to parse JSON: ' + err.message);
+        }
+    }
+    
+    // =====================================================
+    // Party Selection
+    // =====================================================
+    function populateParties() {
+        const select = document.getElementById('partySelect');
+        select.innerHTML = '';
+        
+        const parties = gameState?.parties || {};
+        const partyIds = Object.keys(parties);
+        
+        partyIds.forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = `${id} (${parties[id].turnData?.length || 0} turns)`;
+            select.appendChild(opt);
+        });
+        
+        if (partyIds.length > 0) {
+            select.value = partyIds[0];
+            selectedPartyId = partyIds[0];
+            renderTurnList();
+        }
+    }
+    
+    document.getElementById('partySelect').addEventListener('change', (e) => {
+        selectedPartyId = e.target.value;
+        editedTurns.clear();
+        deletedTurnIndices.clear();
+        renderTurnList();
+    });
+    
+    // =====================================================
+    // Turn Rendering
+    // =====================================================
+    function renderTurnList() {
+        const listEl = document.getElementById('turnList');
+        listEl.innerHTML = '';
+        
+        const party = gameState?.parties?.[selectedPartyId];
+        if (!party || !Array.isArray(party.turnData)) {
+            listEl.innerHTML = '<div style="padding: 20px;">No turn data found for this party</div>';
+            return;
+        }
+        
+        document.getElementById('totalTurns').textContent = party.turnData.length;
+        
+        const maxTick = Math.max(...party.turnData.map(t => t.tick || 0), 0);
+        document.getElementById('currentTick').textContent = maxTick;
+        
+        for (let index = party.turnData.length - 1; index >= 0; index--) {
+            const turn = party.turnData[index];
+            const el = createTurnElement(index, turn);
+            listEl.appendChild(el);
+        }
+    }
+    
+    function createTurnElement(index, turn) {
+        const div = document.createElement('div');
+        div.className = 'turn-item';
+        div.dataset.index = index;
+        
+        const storyMsg = turn.storyMessage || '(no narrative)';
+        const playerInput = turn.playerInputs ? Object.entries(turn.playerInputs).map(([name, txt]) => 
+            `<span class="player">${name}: ${txt}</span>`
+        ).join('\n') : '';
+        
+        const previewText = `${storyMsg}\n${playerInput}`;
+        
+        div.innerHTML = `
+            <div class="turn-header">
+                <div>
+                    <span class="turn-number">#${index}</span>
+                    <span class="tick-badge">Tick ${turn.tick || '?'}</span>
+                </div>
+                <div class="turn-meta">
+                    ${Object.keys(turn.locationContext || {}).length} loc refs | 
+                    ${Object.keys(turn.speakerBindings || {}).length} speakers
+                </div>
+            </div>
+            <div class="turn-preview">${escapeHtml(previewText)}</div>
+            <div class="edit-actions" style="margin-top: 10px; display:none;">
+                <button class="btn-edit-${index}">✏ Edit</button>
+                <button class="btn-delete-tail-${index}" style="background:#e74c3c">🗑 Delete This & Older</button>
+                <button class="btn-edit-single-${index}" style="background:#e67e22">🗑 Just This Turn</button>
+            </div>
+        `;
+        
+        div.addEventListener('mouseenter', () => {
+            div.querySelector('.edit-actions').style.display = 'flex';
+        });
+        
+        div.addEventListener('mouseleave', () => {
+            if (!div.classList.contains('editing')) {
+                div.querySelector('.edit-actions').style.display = 'none';
+            }
+        });
+        
+        div.querySelector(`.btn-edit-${index}`).addEventListener('click', () => {
+            startEditing(index, turn);
+        });
+        
+        div.querySelector(`.btn-delete-tail-${index}`).addEventListener('click', () => {
+            confirmDeleteTail(index);
+        });
+        
+        div.querySelector(`.btn-edit-single-${index}`).addEventListener('click', () => {
+            confirmDeleteSingle(index);
+        });
+        
+        return div;
+    }
+    
+    // =====================================================
+    // Editing Turns
+    // =====================================================
+    function startEditing(index, turn) {
+        const div = document.querySelector(`.turn-item[data-index="${index}"]`);
+        div.classList.add('editing');
+        
+        const storyMsg = turn.storyMessage || '';
+        const playerInputs = turn.playerInputs || {};
+        
+        const formHtml = `
+            <div class="edit-form">
+                <label>Narrative Message:</label>
+                <textarea class="edit-story">${escapeHtml(storyMsg)}</textarea>
+                
+                ${Object.keys(playerInputs).map(char => `
+                    <label>Player Input (${char}):</label>
+                    <textarea class="edit-input-${char}">${escapeHtml(playerInputs[char])}</textarea>
+                `).join('')}
+                
+                <div class="edit-actions">
+                    <button class="btn-save-${index}">💾 Save</button>
+                    <button class="btn-cancel-${index}">✕ Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        div.insertAdjacentHTML('beforeend', formHtml);
+        
+        div.querySelector(`.btn-save-${index}`).addEventListener('click', () => {
+            const newStory = div.querySelector(`.edit-story`).value;
+            const newInputs = {};
+            Object.keys(playerInputs).forEach(char => {
+                const val = div.querySelector(`.edit-input-${char}`).value;
+                if (val) newInputs[char] = val;
+            });
+            
+            const party = gameState.parties[selectedPartyId];
+            if (party.turnData[index]) {
+                party.turnData[index].storyMessage = newStory;
+                party.turnData[index].playerInputs = newInputs;
+            }
+            
+            cancelEditing(div);
+            renderTurnList();
+        });
+        
+        div.querySelector(`.btn-cancel-${index}`).addEventListener('click', () => {
+            cancelEditing(div);
+        });
+    }
+    
+    function cancelEditing(div) {
+        div.classList.remove('editing');
+        div.querySelectorAll('.edit-form').forEach(el => el.remove());
+    }
+    
+    function escapeHtml(str) {
+        return String(str).replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+    
+    // =====================================================
+    // Deletion Logic
+    // =====================================================
+    function confirmDeleteTail(index) {
+        const party = gameState.parties[selectedPartyId];
+        const turnsToDelete = party.turnData.slice(index);
+        const ticksToConsider = [...new Set(turnsToDelete.map(t => t.tick))]
+            .filter(t => t != null && typeof t === 'number' && t >= 0).sort((a,b) => a-b);
+        
+        const linked = findLinkedFields(ticksToConsider);
+        const prevSurvivingTick = ticksToConsider.length > 0 ? Math.min(...ticksToConsider) - 1 : -1;
+        
+        showModal(
+            'Confirm Deletion',
+            renderDeleteConfirmationHTML(index, turnsToDelete.length, ticksToConsider, linked, prevSurvivingTick, false),
+            () => {
+                const actions = collectFieldActions();
+                executeDeleteTail(index, ticksToConsider, actions);
+            }
+        );
+    }
+    
+    function confirmDeleteSingle(index) {
+        const turn = gameState.parties[selectedPartyId].turnData[index];
+        const tick = turn.tick;
+        const ticks = (typeof tick === 'number' && tick >= 0) ? [tick] : [];
+        const linked = findLinkedFields(ticks);
+        const prevSurvivingTick = ticks.length > 0 ? ticks[0] - 1 : -1;
+        
+        showModal(
+            'Delete Single Turn',
+            renderDeleteConfirmationHTML(index, 1, ticks, linked, prevSurvivingTick, true),
+            () => {
+                const actions = collectFieldActions();
+                executeDeleteSingle(index, tick, actions);
+            }
+        );
+    }
+    
+    function findLinkedFields(ticks) {
+        if (!ticks.length) return [];
+        const results = [];
+        const minDeletedTick = Math.min(...ticks);
+        const tickSet = new Set(ticks);
+        
+        function walk(obj, path = []) {
+            if (obj === null || typeof obj !== 'object') return;
+            
+            if (Array.isArray(obj)) {
+                obj.forEach((item, i) => walk(item, path.concat(i)));
+            } else {
+                Object.entries(obj).forEach(([key, val]) => {
+                    const isTickishKey = /tick|turn/i.test(key);
+                    
+                    if (typeof val === 'number' && val >= minDeletedTick) {
+                        const pathStr = path.join('.');
+                        if (/parties\..*\.turnData/.test(pathStr + '.' + key)) {
+                            walk(val, path.concat(key));
+                            return;
+                        }
+                        if (isTickishKey || tickSet.has(val)) {
+                            const segments = path.concat(key);
+                            const parentPath = segments.slice(0, -1).join('.');
+                            
+                            results.push({ 
+                                path: segments.join('.'), 
+                                value: val,
+                                fieldName: key.toLowerCase(),
+                                parentPath: parentPath || null,
+                                parentKey: key
+                            });
+                        }
+                    }
+                    walk(val, path.concat(key));
+                });
+            }
+        }
+        
+        walk(gameState);
+        return results;
+    }
+    
+    // Get a short, human-readable name for a parent container
+    function parentShortName(parentPath) {
+        if (!parentPath) return '';
+        const segs = parentPath.split('.');
+        const last = segs[segs.length - 1];
+        const prev = segs[segs.length - 2];
+        if (/^\d+$/.test(last) && prev) {
+            return prev + '.' + last;
+        }
+        return last;
+    }
+    
+    // Transient caches: rebuilding these on Voyage's side fails validation
+    // (internal objects carry fields like embeddingId that exports never
+    // contain), and the game regenerates them from turn history anyway.
+    function isTransientPath(path) {
+        return /\.systemResults\./.test('.' + path);
+    }
+    
+    function suggestAction(field) {
+        const path = field.path;
+        
+        // Transient caches (systemResults.*): leave alone.
+        if (isTransientPath(path)) {
+            return { action: 'skip', transient: true };
+        }
+        
+        // Default: backfill to the previous surviving tick.
+        return { action: 'backfill', transient: false };
+    }
+    
+    function renderDeleteConfirmationHTML(deletedIndex, count, ticks, linked, prevSurvivingTick, isSingleTurn = false) {
+        if (!linked || linked.length === 0) {
+            return `
+                <p>You are about to delete <strong>${count} turn(s)</strong>.</p>
+                <p><strong>No tick-linked fields detected</strong> that reference the deleted tick range.</p>
+                <p class="warning-text">⚠ This action cannot be undone. Make sure you have a backup!</p>
+            `;
+        }
+        
+        const tickRange = ticks.length > 0 
+            ? ` (tick range: ${ticks[0]}–${ticks[ticks.length-1]})` 
+            : '';
+        
+        // Assign suggested actions to each field
+        const linkedWithActions = linked.map(f => ({
+            ...f,
+            ...suggestAction(f)
+        }));
+        
+        const groupedLinks = {};
+        linkedWithActions.forEach(link => {
+            const prefix = link.path.split('.').slice(0, 3).join('.');
+            if (!groupedLinks[prefix]) groupedLinks[prefix] = [];
+            groupedLinks[prefix].push(link);
+        });
+        
+        const transientCount = linkedWithActions.filter(l => l.transient).length;
+        
+        return `
+            <p>You are about to delete <strong>${count} turn(s)</strong>${tickRange}.</p>
+            <p>The next surviving turn is at <strong>tick ${prevSurvivingTick}</strong>.</p>
+            
+            <div class="legend">
+                <strong>Action types:</strong><br>
+                <span class="legend-item legend-backfill">◀ Backfill to tick ${prevSurvivingTick} (default)</span>
+                <span class="legend-item legend-reset">🔄 Reset to -1 (never occurred)</span>
+                <span class="legend-item legend-keep">✔ Keep unchanged</span>
+                <span class="legend-item legend-delete">🗑 Delete field or parent entry</span>
+            </div>
+            
+            <div class="linked-info-summary">
+                <strong>${linked.length} field(s)</strong> will be modified according to the dropdown selection below.<br>
+                Default is <strong>backfill</strong> for persistent state; fields under <code style="color:#e67e22">systemResults</code> default to <strong>keep unchanged</strong>${transientCount > 0 ? ` (${transientCount} fields, grayed out)` : ''} because Voyage regenerates that cache from the turn history on load — and editing those objects makes its validator reconstruct them, which fails (missing internal fields like embeddingId).
+            </div>
+            
+            <div class="linked-data" id="linked-fields-actions">
+                ${renderLinkedGroupEntriesWithActions(groupedLinks, prevSurvivingTick)}
+            </div>
+            
+            <p class="warning-text">This action cannot be undone. Make sure you have a backup!</p>
+        `;
+    }
+    
+    function renderLinkedGroupEntriesWithActions(groupedLinks, prevSurvivingTick) {
+        let html = '';
+        let groupIdx = 0;
+        
+        for (const [groupPrefix, links] of Object.entries(groupedLinks)) {
+            const groupIsTransient = links.every(l => l.transient);
+            html += `
+                <div class="group-header">
+                    <strong style="color:#6d4aff">${escapeHtml(groupPrefix)}</strong> (${links.length} fields)
+                    ${groupIsTransient ? '<span class="group-note">⚠ transient cache — edit here breaks Voyage validation</span>' : ''}
+                    <select class="bulk-apply" data-group="${groupIdx}">
+                        <option value="">Apply to all…</option>
+                        <option value="backfill">◀ Backfill to ${prevSurvivingTick}</option>
+                        <option value="reset">🔄 Reset to -1</option>
+                        <option value="skip">✔ Keep unchanged</option>
+                    </select>
+                </div>
+            `;
+            
+            links.forEach((link) => {
+                const safePath = escapeHtml(link.path);
+                const fullDetail = escapeHtml(JSON.stringify(link.value));
+                const canDeleteParent = link.parentPath && !/parties\..*\.turnData\.\d+$/.test(link.path);
+                
+                html += `
+                    <div class="linked-entry${link.transient ? ' transient' : ''}" data-group="${groupIdx}">
+                        <code>${safePath}</code>
+                        <span class="value-display" title="${fullDetail}">${fullDetail}</span>
+                        <select class="action-select" data-path="${safePath}" data-parent-path="${link.parentPath || ''}">
+                            <option value="backfill" ${link.action === 'backfill' ? 'selected' : ''}>◀ Set to ${prevSurvivingTick}</option>
+                            <option value="reset" ${link.action === 'reset' ? 'selected' : ''}>🔄 Reset to -1</option>
+                            <option value="delete_field">🗑 Delete this field</option>
+                            ${canDeleteParent ? `<option value="delete_parent">🗑 Delete ${escapeHtml(parentShortName(link.parentPath))}</option>` : ''}
+                            <option value="skip" ${link.action === 'skip' ? 'selected' : ''}>✔ Keep unchanged</option>
+                        </select>
+                    </div>
+                `;
+            });
+            
+            groupIdx++;
+        }
+        
+        return html;
+    }
+    
+    // Wire up bulk-apply dropdowns (called after modal content is inserted)
+    function wireBulkApply() {
+        document.querySelectorAll('.bulk-apply').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const group = sel.dataset.group;
+                const value = sel.value;
+                if (!value) return;
+                document.querySelectorAll(`.linked-entry[data-group="${group}"] .action-select`).forEach(entrySel => {
+                    if ([...entrySel.options].some(o => o.value === value)) {
+                        entrySel.value = value;
+                    }
+                });
+                sel.value = ''; // reset the bulk selector
+            });
+        });
+    }
+    
+    function collectFieldActions() {
+        const actions = {};
+        document.querySelectorAll('#linked-fields-actions .action-select').forEach(sel => {
+            const path = sel.dataset.path;
+            const action = sel.value;
+            if (action !== 'skip') {
+                const parentPath = sel.dataset.parentPath || null;
+                actions[path] = { action, parentPath };
+            }
+        });
+        return actions;
+    }
+    
+    function executeDeleteTail(index, ticks, actions) {
+        const party = gameState.parties[selectedPartyId];
+        const turnsRemoved = party.turnData.splice(index);
+        
+        applyFieldActions(actions);
+        
+        closeModal();
+        renderTurnList();
+        console.log(`✓ Deleted ${turnsRemoved.length} turns, applied ${Object.keys(actions).length} field modifications`);
+    }
+    
+    function executeDeleteSingle(index, tick, actions) {
+        const party = gameState.parties[selectedPartyId];
+        party.turnData.splice(index, 1);
+        
+        applyFieldActions(actions);
+        
+        closeModal();
+        renderTurnList();
+        console.log(`✓ Deleted single turn ${index}, applied ${Object.keys(actions).length} field modifications`);
+    }
+    
+    function resolveNode(path) {
+        // Returns { parent, key } for a dot-path, or null if unreachable
+        const segments = path.split('.');
+        let obj = gameState;
+        for (let i = 0; i < segments.length - 1; i++) {
+            if (obj == null || typeof obj !== 'object') return null;
+            obj = obj[segments[i]];
+        }
+        if (obj == null || typeof obj !== 'object') return null;
+        return { parent: obj, key: segments[segments.length - 1] };
+    }
+    
+    function applyFieldActions(actions) {
+        // Collect parent deletions first (dedup via Set)
+        const parentsToDelete = new Set();
+        const fieldsToDelete = [];
+        const valueChanges = [];
+        
+        Object.entries(actions).forEach(([path, info]) => {
+            if (info.action === 'delete_parent' && info.parentPath) {
+                parentsToDelete.add(info.parentPath);
+            } else if (info.action === 'delete_field') {
+                fieldsToDelete.push(path);
+            } else if (info.action === 'reset' || info.action === 'backfill') {
+                valueChanges.push([path, info.action]);
+            }
+        });
+        
+        // 1. Delete parent entries (deepest paths first so nested parents
+        //    don't orphan shallower deletions)
+        const sortedParents = [...parentsToDelete].sort((a, b) => b.length - a.length);
+        sortedParents.forEach(parentPath => {
+            const node = resolveNode(parentPath);
+            if (!node) return;
+            if (Array.isArray(node.parent) && /^\d+$/.test(node.key)) {
+                node.parent.splice(parseInt(node.key), 1);
+            } else {
+                delete node.parent[node.key];
+            }
+        });
+        
+        // 2. Delete individual fields
+        fieldsToDelete.forEach(path => {
+            const node = resolveNode(path);
+            if (!node) return;
+            if (Array.isArray(node.parent) && /^\d+$/.test(node.key)) {
+                node.parent.splice(parseInt(node.key), 1);
+            } else {
+                delete node.parent[node.key];
+            }
+        });
+        
+        // 3. Apply value changes
+        valueChanges.forEach(([path, action]) => {
+            const node = resolveNode(path);
+            if (!node || typeof node.parent[node.key] !== 'number') return;
+            
+            if (action === 'reset') {
+                node.parent[node.key] = -1;
+            } else if (action === 'backfill') {
+                const prevTick = findPreviousTickBelow(node.parent[node.key]);
+                node.parent[node.key] = prevTick >= 0 ? prevTick : -1;
+            }
+        });
+    }
+    
+    function findPreviousTickBelow(targetTick) {
+        const party = gameState.parties[selectedPartyId];
+        const survivingTicks = party.turnData
+            .map(t => t.tick)
+            .filter(t => t != null && typeof t === 'number')
+            .filter(t => t < targetTick)
+            .sort((a,b) => b-a);
+        return survivingTicks[0] || -1;
+    }
+    
+    // =====================================================
+    // Modal Utilities
+    // =====================================================
+    function showModal(title, content, onConfirm) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('confirmModal').classList.add('active');
+        wireBulkApply();
+        
+        document.getElementById('modalConfirm').onclick = () => {
+            onConfirm();
+        };
+    }
+    
+    function closeModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+        document.getElementById('modalConfirm').onclick = null;
+    }
+    
+    document.getElementById('modalCancel').addEventListener('click', closeModal);
+    
+    // =====================================================
+    // Export / Reset
+    // =====================================================
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        if (!gameState) return;
+        
+        const blob = new Blob([JSON.stringify(gameState, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `game-state.edited.${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        console.log('✓ Exported modified JSON');
+    });
+    
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        if (confirm('Reset ALL changes? This cannot be undone.')) {
+            location.reload();
+        }
+    });
+    
+    // =====================================================
+    // Keyboard Shortcuts
+    // =====================================================
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+    </script>
+</body>
+</html>
