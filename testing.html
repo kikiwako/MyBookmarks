@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testing Ground</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+
+    .file-picker {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    #file-status {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      background: #f3f3f3;
+      padding: 0.1rem 0.25rem;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testing Ground</h1>
+    <p>Choose a file to make it available for experiments in this page's browser console. The file is read locally and is not uploaded.</p>
+
+    <section class="file-picker" aria-labelledby="file-label">
+      <label id="file-label" for="file-input"><strong>Select a file</strong></label>
+      <p><input id="file-input" type="file"></p>
+      <p id="file-status" role="status" aria-live="polite">No file selected.</p>
+    </section>
+
+    <h2>Console access</h2>
+    <ul>
+      <li><code>testFile</code> — the selected browser <code>File</code> object</li>
+      <li><code>testFileText</code> — its contents decoded as text</li>
+      <li>For binary data, use <code>await testFile.arrayBuffer()</code></li>
+    </ul>
+
+    <p><a href="./">Back to MyBookmarks</a></p>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const fileStatus = document.getElementById('file-status');
+
+    // These globals are intentionally available for manual console experiments.
+    window.testFile = null;
+    window.testFileText = null;
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      window.testFile = file || null;
+      window.testFileText = null;
+
+      if (!file) {
+        fileStatus.textContent = 'No file selected.';
+        return;
+      }
+
+      try {
+        window.testFileText = await file.text();
+        fileStatus.textContent = `Loaded: ${file.name}\nSize: ${file.size} bytes\nType: ${file.type || 'unknown'}\nText is available as testFileText in the console.`;
+        console.info('Testing Ground file loaded:', file.name, file);
+      } catch (error) {
+        fileStatus.textContent = `Could not read ${file.name}: ${error.message}`;
+        console.error('Testing Ground could not read the selected file:', error);
+      }
+    });
+  </script>
+</body>
+</html>
