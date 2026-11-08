@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smash Ultimate Randomizer</title>
+<style>
+  :root {
+    --bg: #12101c;
+    --panel: #1d1a2e;
+    --accent: #6d4aff;
+    --accent-light: #8a6dff;
+    --text: #f2f0fa;
+    --muted: #a49ec2;
+    --danger: #ff5470;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px 40px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  #result {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+  #result .placeholder {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  #charName {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    line-height: 1.2;
+  }
+  #poolInfo {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  button {
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+    width: 100%;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #pickBtn {
+    background: var(--accent);
+    color: white;
+    font-size: 1.15rem;
+    padding: 18px;
+  }
+  .secondary-row {
+    display: flex;
+    gap: 10px;
+  }
+  .secondary-row button {
+    background: #2b2745;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: #2b2745;
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  .toggle-label {
+    font-size: 0.95rem;
+  }
+  .toggle-sub {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .switch input {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #443d6b;
+    border-radius: 26px;
+    transition: background 0.2s;
+    pointer-events: none;
+  }
+  .slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+
+  /* --- Selection screen grid --- */
+  #gridSection {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 24px;
+  }
+  #gridSection h2 {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  #cssGrid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 3px;
+  }
+  .tile {
+    background: #232038;
+    border: 1px solid #322d52;
+    border-radius: 5px;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2px 1px;
+    font-size: 0.5rem;
+    line-height: 1.15;
+    color: #b9b3d6;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  .tile.empty {
+    background: #17142a;
+    border: 1px dashed #2a2545;
+    color: #3a3459;
+  }
+  .tile.picked {
+    background: var(--accent);
+    border-color: var(--accent-light);
+    color: #ffffff;
+    font-weight: 700;
+    z-index: 2;
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { box-shadow: 0 0 0 0 rgba(109, 74, 255, 0.9); }
+    to   { box-shadow: 0 0 14px 4px rgba(109, 74, 255, 0.6); }
+  }
+  .picked-out {
+    opacity: 0.28;
+    text-decoration: line-through;
+  }
+
+  #history {
+    width: 100%;
+    max-width: 520px;
+    margin-top: 24px;
+  }
+  #history h2 {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  #historyList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #historyList span {
+    background: var(--panel);
+    border: 1px solid #35305a;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+  }
+</style>
+</head>
+<body>
+  <h1> Smash Ultimate Randomizer</h1>
+  <p class="subtitle">All 89 fighters, Miis included</p>
+
+  <div id="gridSection">
+    <h2>Selection screen — find your fighter</h2>
+    <div id="cssGrid"></div>
+  </div>
+
+  <div class="card">
+    <div id="result">
+      <span class="placeholder" id="resultPlaceholder">Press the button to pick a fighter!</span>
+      <span id="charName" hidden></span>
+    </div>
+
+    <div class="controls">
+      <button id="pickBtn">Random Fighter</button>
+
+      <div class="toggle-row">
+        <label class="toggle-label" for="noRepeats">
+          No-repeats mode
+          <span class="toggle-sub" id="poolStatus"></span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="noRepeats">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="secondary-row">
+        <button id="resetPoolBtn">Reset Pool</button>
+        <button id="clearHistoryBtn">Clear History</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="history" hidden>
+    <h2>Recent picks</h2>
+    <div id="historyList"></div>
+  </div>
+
+<script>
+  // Characters in the order they appear on the 13 x 7 character select screen.
+  // null = empty slot (bottom-left DLC area and right end of the last row).
+  const CSS_GRID = [
+    ["Mario", "Donkey Kong", "Link", "Samus", "Dark Samus", "Yoshi", "Kirby", "Fox", "Pikachu", "Luigi", "Ness", "Captain Falcon", "Jigglypuff"],
+    ["Peach", "Daisy", "Bowser", "Ice Climbers", "Sheik", "Zelda", "Dr. Mario", "Pichu", "Falco", "Marth", "Lucina", "Young Link", "Ganondorf"],
+    ["Mewtwo", "Roy", "Chrom", "Mr. Game & Watch", "Meta Knight", "Pit", "Dark Pit", "Zero Suit Samus", "Wario", "Snake", "Ike", "Pokémon Trainer", "Diddy Kong"],
+    ["Lucas", "Sonic", "King Dedede", "Olimar", "Lucario", "R.O.B.", "Toon Link", "Wolf", "Villager", "Mega Man", "Wii Fit Trainer", "Rosalina & Luma", "Little Mac"],
+    ["Greninja", "Palutena", "Pac-Man", "Robin", "Shulk", "Bowser Jr.", "Duck Hunt", "Ryu", "Ken", "Cloud", "Corrin", "Bayonetta", "Inkling"],
+    ["Ridley", "Simon", "Richter", "King K. Rool", "Isabelle", "Incineroar", "Piranha Plant", "Joker", "Hero", "Banjo & Kazooie", "Terry", "Byleth", "Min Min"],
+    [null, null, "Steve", "Sephiroth", "Pyra / Mythra", "Kazuya", "Sora", "Mii Brawler", "Mii Swordfighter", "Mii Gunner", null, null, null]
+  ];
+
+  const CHARACTERS = CSS_GRID.flat().filter(n => n !== null);
+
+  const STORAGE_KEY = "smash-randomizer-v1";
+
+  // Session state (survives page reloads within the tab via sessionStorage)
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
+      if (saved && Array.isArray(saved.pool) && Array.isArray(saved.history)) {
+        return saved;
+      }
+    } catch (e) { /* corrupted state, fall through */ }
+    return { noRepeats: false, pool: [...CHARACTERS], history: [] };
+  }
+
+  function saveState() {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { /* storage unavailable; keep in-memory state */ }
+  }
+
+  const pickBtn = document.getElementById("pickBtn");
+  const resetPoolBtn = document.getElementById("resetPoolBtn");
+  const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+  const noRepeatsToggle = document.getElementById("noRepeats");
+  const charName = document.getElementById("charName");
+  const resultPlaceholder = document.getElementById("resultPlaceholder");
+  const poolStatus = document.getElementById("poolStatus");
+  const cssGrid = document.getElementById("cssGrid");
+  const historySection = document.getElementById("history");
+  const historyList = document.getElementById("historyList");
+
+  // Build the grid once; remember each character's tile element.
+  const tileByChar = {};
+  CSS_GRID.forEach(row => {
+    row.forEach(name => {
+      const tile = document.createElement("div");
+      if (name === null) {
+        tile.className = "tile empty";
+        tile.textContent = "·";
+      } else {
+        tile.className = "tile";
+        tile.textContent = name;
+        tileByChar[name] = tile;
+      }
+      cssGrid.appendChild(tile);
+    });
+  });
+
+  function pickRandom() {
+    const source = state.noRepeats ? state.pool : CHARACTERS;
+    if (source.length === 0) return null;
+    const index = Math.floor(Math.random() * source.length);
+    const picked = source[index];
+    if (state.noRepeats) {
+      state.pool.splice(index, 1);
+    }
+    state.history.unshift(picked);
+    state.history = state.history.slice(0, 15);
+    saveState();
+    return picked;
+  }
+
+  function highlightOnGrid(picked) {
+    Object.values(tileByChar).forEach(t => t.classList.remove("picked"));
+    if (picked && tileByChar[picked]) {
+      const tile = tileByChar[picked];
+      tile.classList.add("picked");
+      tile.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+    }
+  }
+
+  function render() {
+    noRepeatsToggle.checked = state.noRepeats;
+
+    if (state.noRepeats) {
+      const remaining = state.pool.length;
+      poolStatus.textContent = `${remaining} of ${CHARACTERS.length} fighters left in the pool`;
+      pickBtn.disabled = remaining === 0;
+      pickBtn.textContent = remaining === 0 ? "Pool is empty!" : "Random Fighter";
+    } else {
+      poolStatus.textContent = "Full roster every pick";
+      pickBtn.disabled = false;
+      pickBtn.textContent = "Random Fighter";
+    }
+
+    // Dim tiles of fighters already taken (no-repeats mode only)
+    Object.entries(tileByChar).forEach(([name, tile]) => {
+      tile.classList.toggle("picked-out",
+        state.noRepeats && !state.pool.includes(name) && !tile.classList.contains("picked"));
+    });
+
+    historySection.hidden = state.history.length === 0;
+    historyList.innerHTML = "";
+    state.history.forEach(name => {
+      const chip = document.createElement("span");
+      chip.textContent = name;
+      historyList.appendChild(chip);
+    });
+  }
+
+  function animatePick() {
+    // Quick cycle effect before landing on the result
+    const frames = 10;
+    let i = 0;
+    const interval = setInterval(() => {
+      charName.textContent = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
+      charName.hidden = false;
+      resultPlaceholder.hidden = true;
+      i++;
+      if (i >= frames) {
+        clearInterval(interval);
+        const picked = pickRandom();
+        if (picked === null) {
+          charName.hidden = true;
+          resultPlaceholder.textContent = "Pool is empty — reset it to keep going!";
+          resultPlaceholder.hidden = false;
+        } else {
+          charName.textContent = picked;
+        }
+        highlightOnGrid(picked);
+        render();
+      }
+    }, 60);
+  }
+
+  pickBtn.addEventListener("click", animatePick);
+
+  noRepeatsToggle.addEventListener("change", () => {
+    state.noRepeats = noRepeatsToggle.checked;
+    if (state.noRepeats && state.pool.length === 0) {
+      state.pool = [...CHARACTERS];
+    }
+    saveState();
+    render();
+  });
+
+  resetPoolBtn.addEventListener("click", () => {
+    state.pool = [...CHARACTERS];
+    saveState();
+    render();
+  });
+
+  clearHistoryBtn.addEventListener("click", () => {
+    state.history = [];
+    saveState();
+    render();
+    charName.hidden = true;
+    resultPlaceholder.hidden = false;
+    resultPlaceholder.textContent = "Press the button to pick a fighter!";
+    highlightOnGrid(null);
+  });
+
+  // Restore the last pick on reload, if any
+  if (state.history[0]) {
+    charName.textContent = state.history[0];
+    charName.hidden = false;
+    resultPlaceholder.hidden = true;
+    highlightOnGrid(state.history[0]);
+  }
+
+  render();
+</script>
+</body>
+</html>
