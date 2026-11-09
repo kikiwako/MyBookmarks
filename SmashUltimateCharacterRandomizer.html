@@ -12,7 +12,6 @@
     --accent-light: #8a6dff;
     --text: #f2f0fa;
     --muted: #a49ec2;
-    --danger: #ff5470;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -66,10 +65,6 @@
     font-weight: 700;
     color: var(--accent-light);
     line-height: 1.2;
-  }
-  #poolInfo {
-    font-size: 0.85rem;
-    color: var(--muted);
   }
   .controls {
     display: flex;
@@ -162,7 +157,7 @@
   /* --- Selection screen grid --- */
   #gridSection {
     width: 100%;
-    max-width: 520px;
+    max-width: 900px;
     margin-bottom: 24px;
   }
   #gridSection h2 {
@@ -171,47 +166,86 @@
     margin-bottom: 8px;
     text-align: center;
   }
+  .grid-tools {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .grid-tools button {
+    background: #2b2745;
+    color: var(--text);
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    width: auto;
+    flex: 1;
+  }
+  .grid-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1919 / 607; /* fallback; replaced by the image's real ratio on load */
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  #rosterImg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill; /* never crop — the container matches the image ratio */
+    display: none;
+  }
+  .grid-wrap.has-image #rosterImg { display: block; }
   #cssGrid {
+    position: absolute;
+    inset: 0;
     display: grid;
     grid-template-columns: repeat(13, 1fr);
-    gap: 3px;
+    grid-template-rows: repeat(7, 1fr);
   }
   .tile {
-    background: #232038;
-    border: 1px solid #322d52;
-    border-radius: 5px;
-    min-height: 34px;
+    background: transparent;
+    outline: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 2px 1px;
+    padding: 1px;
     font-size: 0.5rem;
-    line-height: 1.15;
+    line-height: 1.1;
     color: #b9b3d6;
     word-break: break-word;
     hyphens: auto;
   }
+  /* When the roster image is loaded, hide the text labels */
+  .grid-wrap.has-image .tile span { display: none; }
   .tile.empty {
-    background: #17142a;
-    border: 1px dashed #2a2545;
-    color: #3a3459;
+    background: transparent;
+    outline: none;
   }
   .tile.picked {
-    background: var(--accent);
-    border-color: var(--accent-light);
-    color: #ffffff;
-    font-weight: 700;
+    background: rgba(109, 74, 255, 0.35);
+    outline: 3px solid var(--accent-light);
+    box-shadow: 0 0 14px 4px rgba(109, 74, 255, 0.65), inset 0 0 18px rgba(109, 74, 255, 0.45);
     z-index: 2;
+    border-radius: 3px;
     animation: pulse 0.8s ease-in-out infinite alternate;
+    color: #fff;
   }
   @keyframes pulse {
-    from { box-shadow: 0 0 0 0 rgba(109, 74, 255, 0.9); }
-    to   { box-shadow: 0 0 14px 4px rgba(109, 74, 255, 0.6); }
+    from { outline: 3px solid var(--accent-light); }
+    to   { outline: 4px solid #cfc2ff; }
   }
-  .picked-out {
-    opacity: 0.28;
-    text-decoration: line-through;
+  /* Dark overlay over fighters already drawn from the pool */
+  .tile.picked-out {
+    background: rgba(0, 0, 0, 0.68);
+    outline: none;
+  }
+  #imageInput { display: none; }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
   }
 
   #history {
@@ -244,7 +278,16 @@
 
   <div id="gridSection">
     <h2>Selection screen — find your fighter</h2>
-    <div id="cssGrid"></div>
+    <div class="grid-tools">
+      <button id="uploadImageBtn">📷 Load roster image</button>
+      <button id="removeImageBtn" hidden>Remove image</button>
+    </div>
+    <input type="file" id="imageInput" accept="image/*">
+    <div class="grid-wrap" id="gridWrap">
+      <img id="rosterImg" alt="Character select screen">
+      <div id="cssGrid"></div>
+    </div>
+    <p class="hint" id="gridHint">Looking for roster.png / roster.jpg next to this file… if not found, names are shown as text.</p>
   </div>
 
   <div class="card">
@@ -294,14 +337,17 @@
 
   const CHARACTERS = CSS_GRID.flat().filter(n => n !== null);
 
-  const STORAGE_KEY = "smash-randomizer-v1";
+  // Filenames tried (in order) next to the HTML file
+  const ROSTER_FILENAMES = ["roster.png", "roster.jpg", "roster.jpeg", "roster.webp"];
+
+  const STATE_KEY = "smash-randomizer-v1";
 
   // Session state (survives page reloads within the tab via sessionStorage)
   let state = loadState();
 
   function loadState() {
     try {
-      const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
+      const saved = JSON.parse(sessionStorage.getItem(STATE_KEY));
       if (saved && Array.isArray(saved.pool) && Array.isArray(saved.history)) {
         return saved;
       }
@@ -311,7 +357,7 @@
 
   function saveState() {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
     } catch (e) { /* storage unavailable; keep in-memory state */ }
   }
 
@@ -323,24 +369,98 @@
   const resultPlaceholder = document.getElementById("resultPlaceholder");
   const poolStatus = document.getElementById("poolStatus");
   const cssGrid = document.getElementById("cssGrid");
+  const gridWrap = document.getElementById("gridWrap");
+  const rosterImg = document.getElementById("rosterImg");
+  const imageInput = document.getElementById("imageInput");
+  const uploadImageBtn = document.getElementById("uploadImageBtn");
+  const removeImageBtn = document.getElementById("removeImageBtn");
+  const gridHint = document.getElementById("gridHint");
   const historySection = document.getElementById("history");
   const historyList = document.getElementById("historyList");
 
   // Build the grid once; remember each character's tile element.
+  // Each tile keeps a <span> with the name — shown only when no image is loaded.
   const tileByChar = {};
   CSS_GRID.forEach(row => {
     row.forEach(name => {
       const tile = document.createElement("div");
       if (name === null) {
         tile.className = "tile empty";
-        tile.textContent = "·";
       } else {
         tile.className = "tile";
-        tile.textContent = name;
+        const label = document.createElement("span");
+        label.textContent = name;
+        tile.appendChild(label);
         tileByChar[name] = tile;
       }
       cssGrid.appendChild(tile);
     });
+  });
+
+  // --- Roster image handling ---
+
+  function activateImage(src) {
+    rosterImg.src = src;
+    gridWrap.classList.add("has-image");
+    uploadImageBtn.hidden = true;
+    removeImageBtn.hidden = false;
+  }
+
+  function clearImage() {
+    rosterImg.removeAttribute("src");
+    gridWrap.classList.remove("has-image");
+    uploadImageBtn.hidden = false;
+    removeImageBtn.hidden = true;
+  }
+
+  // Fit the overlay to the image's real pixel dimensions
+  function fitAspectRatio() {
+    if (rosterImg.naturalWidth && rosterImg.naturalHeight) {
+      gridWrap.style.aspectRatio = `${rosterImg.naturalWidth} / ${rosterImg.naturalHeight}`;
+    }
+  }
+  rosterImg.addEventListener("load", fitAspectRatio);
+
+  // Try loading roster.(png|jpg|...) from the same folder as the HTML file.
+  // Works when the page is opened locally or served; in sandboxed previews the
+  // fetch fails silently and the text-label fallback is used.
+  (function autoLoadRosterImage() {
+    let index = 0;
+    const probe = new Image();
+    probe.onload = () => {
+      activateImage(probe.src);
+      fitAspectRatio();
+      gridHint.textContent = "Loaded roster image from this folder.";
+    };
+    probe.onerror = () => {
+      index++;
+      if (index < ROSTER_FILENAMES.length) {
+        probe.src = ROSTER_FILENAMES[index];
+      } else {
+        gridHint.textContent = "No roster image found next to this file — showing names as text. Drop a roster.png / roster.jpg in this folder and reload.";
+      }
+    };
+    probe.src = ROSTER_FILENAMES[index];
+  })();
+
+  // Manual upload stays available as an override
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files && imageInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      activateImage(reader.result);
+      gridHint.textContent = "Using manually loaded image (session only).";
+    };
+    reader.readAsDataURL(file);
+    imageInput.value = "";
+  });
+
+  uploadImageBtn.addEventListener("click", () => imageInput.click());
+
+  removeImageBtn.addEventListener("click", () => {
+    clearImage();
+    gridHint.textContent = "Image removed — showing names as text. Reload the page to retry roster.png.";
   });
 
   function pickRandom() {
@@ -380,7 +500,7 @@
       pickBtn.textContent = "Random Fighter";
     }
 
-    // Dim tiles of fighters already taken (no-repeats mode only)
+    // Darken tiles of fighters already taken (no-repeats mode only)
     Object.entries(tileByChar).forEach(([name, tile]) => {
       tile.classList.toggle("picked-out",
         state.noRepeats && !state.pool.includes(name) && !tile.classList.contains("picked"));
